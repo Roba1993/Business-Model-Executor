@@ -1,0 +1,13 @@
+[package]
+name = "bme"
+version = "0.1.0"
+authors = ["Robert Schütte <schuetterobert@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+
+# serde_json is just for the example, not required in general
+serde_json = "1.0"
+
+error-chain = "0.12.0"
