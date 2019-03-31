@@ -15,20 +15,12 @@ struct Block {
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 struct Node {
     id: u32,
-    nodeType: NodeType,
+    nodeType: String,
     connectionType: ConnectionType,
     value: Value,
     connectedBlockTypeId: Option<u32>,
     connectedBlockId: Option<u32>,
     connectedNodeId: Option<u32>,
-}
-
-#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
-#[serde(rename_all = "lowercase")]
-enum NodeType {
-    Input,
-    Output,
-    Unknown,
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
@@ -342,7 +334,7 @@ impl Executer {
 
         // get the next node if available
         if let Some(next_node) = block.nodes.iter().find(|&n| {
-            n.nodeType == NodeType::Output && n.connectionType == ConnectionType::Execution
+            n.nodeType == "output" && n.connectionType == ConnectionType::Execution
         }) {
             // get the next block id if avilable
             if let Some(next_block_id) = next_node.connectedBlockId {
@@ -368,7 +360,7 @@ impl Executer {
             .nodes
             .iter()
             .filter(|n| {
-                n.nodeType == NodeType::Input && n.connectionType != ConnectionType::Execution
+                n.nodeType == "input" && n.connectionType != ConnectionType::Execution
             })
             .collect::<Vec<&Node>>();
 
