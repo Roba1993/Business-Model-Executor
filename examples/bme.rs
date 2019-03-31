@@ -25,9 +25,9 @@ fn main() {
         "0".to_string(),
         "".to_string(),
     );
-    logic.add_block(Box::new(bme::Start {}));
-    logic.add_block(Box::new(bme::ConsoleLog {}));
-    logic.add_block(Box::new(bme::StaticString {}));
+    logic.add_block(Box::new(bme::blocks::Start {}));
+    logic.add_block(Box::new(bme::blocks::ConsoleLog {}));
+    logic.add_block(Box::new(bme::blocks::StaticString {}));
 
     println!(
         "{}",
