@@ -16,9 +16,8 @@ impl ExecutionBlock for Start {
         ExecutionBlockType::Start
     }
 
-    fn intern_execute(&self, input: Vec<Value>) -> Result<Vec<Value>> {
-        println!("#> Start Executed");
-        println!("#> {:?}", input);
+    fn intern_execute(&self, _input: Vec<Value>) -> Result<Vec<Value>> {
+        println!("#Start>");
 
         Ok(vec![])
     }
@@ -44,8 +43,18 @@ impl ExecutionBlock for ConsoleLog {
     }
 
     fn intern_execute(&self, input: Vec<Value>) -> Result<Vec<Value>> {
-        println!("#> Console Log Executed");
-        println!("#> {:?}", input);
+        // get the first value
+        if let Some(i) = input.get(0) {
+            // print it
+            match i {
+                Value::String(s) => println!("#> {}", s),
+                _ => println!("#> null")
+            }
+        }
+        // if no value is available, we print a plain promt
+        else {
+            println!("#>");
+        }
 
         Ok(vec![])
     }
@@ -75,9 +84,6 @@ impl ExecutionBlock for StaticString {
     }
 
     fn intern_execute(&self, input: Vec<Value>) -> Result<Vec<Value>> {
-        println!("#> Static String Executed");
-        println!("#> {:?}", input);
-
         Ok(input)
     }
 }

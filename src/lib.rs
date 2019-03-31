@@ -329,23 +329,19 @@ impl Executer {
             .iter()
             .find(|&b| b.blockId == next_block_id)
             .ok_or("No Block with the given id avilable")?;
-        //println!("\nblock: {:?}", block);
 
-        let next_node = block
-            .nodes
-            .iter()
-            .find(|&n| {
-                n.nodeType == NodeType::Output && n.connectionType == ConnectionType::Execution
-            })
-            .ok_or("Execution ended (No next Execution Node")?;
+        // get the next node if available
+        if let Some(next_node) = block.nodes.iter().find(|&n| {
+            n.nodeType == NodeType::Output && n.connectionType == ConnectionType::Execution
+        }) {
+            // get the next block id if avilable
+            if let Some(next_block_id) = next_node.connectedBlockId {
+                // when available, start again
+                self.execute_block(next_block_id)?;
+            }
+        }
 
-        let next_block_id = next_node
-            .connectedBlockId
-            .ok_or("Execution ended (No next Execution Node connected)")?;
-        //println!("\nnext_block_id: {:?}", next_block_id);
-
-        self.execute_block(next_block_id)?;
-
+        // When this point is reached, the programm has ended sucessfully
         Ok(())
     }
 
@@ -356,7 +352,6 @@ impl Executer {
             .iter()
             .find(|&b| b.blockId == block_id)
             .ok_or("No Block with the given id avilable")?;
-        //println!("\nblock: {:?}", block);
 
         // get all input nodes for this block which are not of type execution
         let inputs = block
@@ -380,10 +375,6 @@ impl Executer {
                 let con_block_id = n.connectedBlockId.ok_or("Is always okay")?;
                 let con_node_id = n.connectedNodeId.ok_or("Is always okay")?;
                 let con_block_type_id = n.connectedBlockTypeId.ok_or("Is always okay")?;
-                /*println!(
-                    "\ncon_block_id: {:?} con_node_id: {:?} con_block_id: {:?}",
-                    con_block_id, con_node_id, con_block_type_id
-                );*/
 
                 // get the exec_block
                 let exec_block = self
@@ -398,8 +389,6 @@ impl Executer {
                     }
                     ExecutionBlockType::Static => {
                         let values = self.exec_inputs(con_block_id)?;
-
-                        //println!("\nvalues: {:?} ", values);
 
                         results.push(
                             values
