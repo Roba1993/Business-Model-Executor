@@ -49,7 +49,7 @@ enum Value {
 pub struct Register {
     blockId: u32,
     nodeId: u32,
-    value: String,
+    value: Value,
 }
 
 pub trait ExecutionBlock: std::fmt::Debug {
@@ -66,19 +66,24 @@ pub trait ExecutionBlock: std::fmt::Debug {
         &[]
     }
 
-    /*fn execute(&self, input: Vec<crate::Register>) -> Result<Vec<crate::Register>> {
-        // loop over the inputs
-        for (i, reg) in input.iter().enumerate() {
-            match self.get_type() {
-                ExecutionBlockType::Start => {},
-                ExecutionBlockType::Static => {},
-                ExecutionBlockType::Normal => {},
-            };
-        }
+    fn execute(&self, input: Vec<crate::Register>, block_id: u32) -> Result<Vec<crate::Register>> {
+        let inp = input.into_iter().map(|r| r.value).collect::<Vec<Value>>();
 
+        // execute the block
+        //let mut output = self.exec(input)?;
 
-        Ok
-    }*/
+        let out = inp
+            .into_iter()
+            .enumerate()
+            .map(|(i, v)| Register {
+                blockId: block_id,
+                nodeId: ((i as u32) * 2) + 3,
+                value: v,
+            })
+            .collect::<Vec<Register>>();
+
+        Ok(out)
+    }
 
     fn get_json(&self) -> serde_json::Value {
         let mut nodes: Vec<serde_json::Value> = vec![];
@@ -92,13 +97,13 @@ pub trait ExecutionBlock: std::fmt::Debug {
                 nodes.push(serde_json::json!({ "id": 0, "io": "input", "type": "Execution", "name": "Run" }));
                 nodes.push(serde_json::json!({ "id": 1, "io": "output", "type": "Execution", "name": "Next" }));
             }
-            _ => {}
+            ExecutionBlockType::Static => {}
         };
 
         // add the other defined input & outputs
         let mut inp = self.get_inputs().iter();
         let mut out = self.get_outputs().iter();
-        let mut index = nodes.len();
+        let mut index = 2;
 
         loop {
             // get the next input & output
@@ -108,14 +113,14 @@ pub trait ExecutionBlock: std::fmt::Debug {
             // try to add the next input
             if let Some(n) = i {
                 nodes.push(serde_json::json!({ "id": index, "io": "input", "type": n }));
-                index += 1;
             }
 
             // try to add the next output
             if let Some(n) = o {
-                nodes.push(serde_json::json!({ "id": index, "io": "output", "type": n }));
-                index += 1;
+                nodes.push(serde_json::json!({ "id": index+1, "io": "output", "type": n }));
             }
+
+            index += 2;
 
             // when input & output are completly loop over, end
             if i.is_none() && o.is_none() {
@@ -253,7 +258,7 @@ pub struct Executer {
     raw_code: String,
     code: Vec<Block>,
     code_ok: bool,
-    register: HashMap<(u32, u32), String>,
+    register: HashMap<(u32, u32), Value>,
 }
 
 impl Executer {
@@ -419,15 +424,10 @@ impl Executer {
 
             // when no other block is connected
             } else {
-                let value = match &n.value {
-                    Value::String(s) => s.clone(),
-                    _ => "null".to_string(),
-                };
-
                 results.push(Register {
                     blockId: block.blockId,
                     nodeId: n.id,
-                    value,
+                    value: n.value.clone(),
                 });
             }
         }
