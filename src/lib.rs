@@ -7,20 +7,27 @@ use std::collections::HashMap;
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 struct Block {
-    blockId: u32,
-    blockTypeId: u32,
+    #[serde(alias = "blockId")]
+    block_id: u32,
+    #[serde(alias = "blockTypeId")]
+    block_type_id: u32,
     nodes: Vec<Node>,
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 struct Node {
     id: u32,
-    nodeType: String,
-    connectionType: String,
+    #[serde(alias = "nodeType")]
+    node_type: String,
+    #[serde(alias = "connectionType")]
+    connection_type: String,
     value: Value,
-    connectedBlockTypeId: Option<u32>,
-    connectedBlockId: Option<u32>,
-    connectedNodeId: Option<u32>,
+    #[serde(alias = "connectedBlockTypeId")]
+    connected_block_type_id: Option<u32>,
+    #[serde(alias = "connectedBlockId")]
+    connected_block_id: Option<u32>,
+    #[serde(alias = "connectedNodeId")]
+    connected_node_id: Option<u32>,
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
@@ -41,8 +48,8 @@ impl Value {
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Register {
-    blockId: u32,
-    nodeId: u32,
+    block_id: u32,
+    node_id: u32,
     value: Value,
 }
 
@@ -70,8 +77,8 @@ pub trait ExecutionBlock: std::fmt::Debug {
             .into_iter()
             .enumerate()
             .map(|(i, v)| Register {
-                blockId: block_id,
-                nodeId: ((i as u32) * 2) + 3,
+                block_id: block_id,
+                node_id: ((i as u32) * 2) + 3,
                 value: v,
             })
             .collect::<Vec<Register>>();
@@ -291,7 +298,7 @@ impl Executer {
 
         let start_block = self.find_start_block()?;
 
-        self.execute_block(start_block.blockId)?;
+        self.execute_block(start_block.block_id)?;
 
         Ok(())
     }
@@ -305,7 +312,7 @@ impl Executer {
         let block = self
             .code
             .iter()
-            .find(|&b| b.blockTypeId == start_block.get_id())
+            .find(|&b| b.block_type_id == start_block.get_id())
             .ok_or("No start Block available")?;
 
         Ok(block)
@@ -317,24 +324,24 @@ impl Executer {
 
         // insert the result into the register
         for r in reg {
-            self.register.insert((r.blockId, r.nodeId), r.value);
+            self.register.insert((r.block_id, r.node_id), r.value);
         }
 
         // get the block for the block id
         let block = self
             .code
             .iter()
-            .find(|&b| b.blockId == next_block_id)
+            .find(|&b| b.block_id == next_block_id)
             .ok_or("No Block with the given id avilable")?;
 
         // get the next node if available
         if let Some(next_node) = block
             .nodes
             .iter()
-            .find(|&n| n.nodeType == "output" && n.connectionType == "Execution")
+            .find(|&n| n.node_type == "output" && n.connection_type == "Execution")
         {
             // get the next block id if avilable
-            if let Some(next_block_id) = next_node.connectedBlockId {
+            if let Some(next_block_id) = next_node.connected_block_id {
                 // when available, start again
                 self.execute_block(next_block_id)?;
             }
@@ -349,14 +356,14 @@ impl Executer {
         let block = self
             .code
             .iter()
-            .find(|&b| b.blockId == block_id)
+            .find(|&b| b.block_id == block_id)
             .ok_or("No Block with the given id avilable")?;
 
         // get all input nodes for this block which are not of type execution
         let inputs = block
             .nodes
             .iter()
-            .filter(|n| n.nodeType == "input" && n.connectionType != "Execution")
+            .filter(|n| n.node_type == "input" && n.connection_type != "Execution")
             .collect::<Vec<&Node>>();
 
         let mut results: Vec<Register> = vec![];
@@ -364,14 +371,14 @@ impl Executer {
         // handle all input nodes
         for n in inputs {
             // when another block is connected
-            if n.connectedBlockId.is_some()
-                && n.connectedNodeId.is_some()
-                && n.connectedBlockTypeId.is_some()
+            if n.connected_block_id.is_some()
+                && n.connected_node_id.is_some()
+                && n.connected_block_type_id.is_some()
             {
                 // get the other block and node id
-                let con_block_id = n.connectedBlockId.ok_or("Is always okay")?;
-                let con_node_id = n.connectedNodeId.ok_or("Is always okay")?;
-                let con_block_type_id = n.connectedBlockTypeId.ok_or("Is always okay")?;
+                let con_block_id = n.connected_block_id.ok_or("Is always okay")?;
+                let con_node_id = n.connected_node_id.ok_or("Is always okay")?;
+                let con_block_type_id = n.connected_block_type_id.ok_or("Is always okay")?;
 
                 // get the exec_block
                 let exec_block = self
@@ -390,7 +397,7 @@ impl Executer {
                         results.push(
                             values
                                 .into_iter()
-                                .find(|v| v.nodeId == con_node_id)
+                                .find(|v| v.node_id == con_node_id)
                                 .ok_or("No value available")?,
                         );
                     }
@@ -401,8 +408,8 @@ impl Executer {
                             .ok_or("Value not avilable in register")?;
 
                         results.push(Register {
-                            blockId: con_block_id,
-                            nodeId: con_node_id,
+                            block_id: con_block_id,
+                            node_id: con_node_id,
                             value: value.clone(),
                         });
                     }
@@ -411,8 +418,8 @@ impl Executer {
             // when no other block is connected
             } else {
                 results.push(Register {
-                    blockId: block.blockId,
-                    nodeId: n.id,
+                    block_id: block.block_id,
+                    node_id: n.id,
                     value: n.value.clone(),
                 });
             }
@@ -420,7 +427,7 @@ impl Executer {
 
         let exec_block = self
             .logic
-            .get_block(block.blockTypeId)
+            .get_block(block.block_type_id)
             .ok_or("The given Block Type is not avilable")?;
 
         let ret = exec_block.execute(results, block_id)?;
