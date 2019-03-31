@@ -1,5 +1,185 @@
-use crate::error::Result;
-use crate::ConnectionType;
+mod error;
+
+use error::Result;
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+pub struct Block {
+    pub blockId: u32,
+    pub blockTypeId: u32,
+    pub nodes: Vec<Node>,
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+pub struct Node {
+    pub id: u32,
+    pub nodeType: NodeType,
+    pub connectionType: ConnectionType,
+    pub value: Value,
+    pub connectedBlockTypeId: Option<u32>,
+    pub connectedBlockId: Option<u32>,
+    pub connectedNodeId: Option<u32>,
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+#[serde(rename_all = "lowercase")]
+pub enum NodeType {
+    Input,
+    Output,
+    Unknown,
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+pub enum ConnectionType {
+    Execution,
+    String,
+    Integer,
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+#[serde(untagged)]
+pub enum Value {
+    String(String),
+    Unknown,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct Register {
+    blockId: u32,
+    nodeId: u32,
+    value: String,
+}
+
+pub fn execute_block(
+    code: Vec<Block>,
+    register: &mut HashMap<(u32, u32), String>,
+    next_block_id: u32,
+) -> Result<()> {
+    // get the block for the block id
+    let block = code
+        .iter()
+        .find(|&b| b.blockId == next_block_id)
+        .ok_or("No Block with the given id avilable")?;
+    println!("\nblock: {:?}", block);
+
+    // handle the input of the node and execute the node
+    exec_inputs(&code, register, block)?;
+
+    let next_node = block
+        .nodes
+        .iter()
+        .find(|&n| n.nodeType == NodeType::Output && n.connectionType == ConnectionType::Execution)
+        .ok_or("Execution ended (No next Execution Node")?;
+
+    let next_block_id = next_node
+        .connectedBlockId
+        .ok_or("Execution ended (No next Execution Node connected)")?;
+    println!("\nnext_block_id: {:?}", next_block_id);
+
+    execute_block(code, register, next_block_id)?;
+
+    Ok(())
+}
+
+pub fn exec_inputs(
+    code: &[Block],
+    register: &mut HashMap<(u32, u32), String>,
+    block: &Block,
+) -> Result<Vec<Register>> {
+    // get all input nodes for this block which are not of type execution
+    let inputs = block
+        .nodes
+        .iter()
+        .filter(|n| n.nodeType == NodeType::Input && n.connectionType != ConnectionType::Execution)
+        .collect::<Vec<&Node>>();
+
+    let mut results: Vec<Register> = vec![];
+
+    // handle all input nodes
+    for n in inputs {
+        // when another block is connected
+        if n.connectedBlockId.is_some()
+            && n.connectedNodeId.is_some()
+            && n.connectedBlockTypeId.is_some()
+        {
+            // get the other block and node id
+            let con_block_id = n.connectedBlockId.ok_or("Is always okay")?;
+            let con_node_id = n.connectedNodeId.ok_or("Is always okay")?;
+            let con_block_type_id = n.connectedBlockTypeId.ok_or("Is always okay")?;
+            println!(
+                "\ncon_block_id: {:?} con_node_id: {:?} con_block_id: {:?}",
+                con_block_id, con_node_id, con_block_type_id
+            );
+
+            // get the exec_block
+            let exec_block = get_block(con_block_type_id)
+                .ok_or("The given Block Type is not avilable")?;
+
+            // based upon the block type we have different executions
+            match exec_block.get_type() {
+                ExecutionBlockType::Start => {
+                    unimplemented!("Can't handle Start block outputs");
+                }
+                ExecutionBlockType::Static => {
+                    // get the other block
+                    let inp_block = code
+                        .iter()
+                        .find(|&b| b.blockId == con_block_id)
+                        .ok_or("No Block with the given id avilable")?;
+
+                    let values = exec_inputs(code, register, inp_block)?;
+
+                    println!("\nvalues: {:?} ", values);
+
+                    results.push(
+                        values
+                            .into_iter()
+                            .find(|v| v.nodeId == con_node_id)
+                            .ok_or("No value available")?,
+                    );
+                }
+                ExecutionBlockType::Normal => {
+                    let value = register
+                        .get(&(con_block_id, con_node_id))
+                        .ok_or("Value not avilable in register")?;
+
+                    results.push(Register {
+                        blockId: con_block_id,
+                        nodeId: con_node_id,
+                        value: value.clone(),
+                    });
+                }
+            };
+
+        // when no other block is connected
+        } else {
+            let value = match &n.value {
+                Value::String(s) => s.clone(),
+                _ => "null".to_string(),
+            };
+
+            results.push(Register {
+                blockId: block.blockId,
+                nodeId: n.id,
+                value,
+            });
+        }
+    }
+
+    let exec_block =
+        get_block(block.blockTypeId).ok_or("The given Block Type is not avilable")?;
+
+    let ret = exec_block.exec(results)?;
+
+    // outputs of normal blocks need to be saved to registers
+
+    Ok(ret)
+}
+
+
+
+
 
 pub trait ExecutionBlock: std::fmt::Debug {
     fn get_id(&self) -> u32;
