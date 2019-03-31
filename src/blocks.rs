@@ -1,5 +1,5 @@
 use crate::error::Result;
-use crate::{ExecutionBlock, ExecutionBlockType, ConnectionType, Value};
+use crate::{ConnectionType, ExecutionBlock, ExecutionBlockType, Value};
 
 #[derive(Debug)]
 pub struct Start {}
@@ -48,7 +48,7 @@ impl ExecutionBlock for ConsoleLog {
             // print it
             match i {
                 Value::String(s) => println!("#> {}", s),
-                _ => println!("#> null")
+                _ => println!("#> null"),
             }
         }
         // if no value is available, we print a plain promt
@@ -84,6 +84,52 @@ impl ExecutionBlock for StaticString {
     }
 
     fn intern_execute(&self, input: Vec<Value>) -> Result<Vec<Value>> {
+        Ok(input)
+    }
+}
+
+#[derive(Debug)]
+pub struct AddString {}
+impl ExecutionBlock for AddString {
+    fn get_id(&self) -> u32 {
+        4
+    }
+
+    fn get_name(&self) -> &'static str {
+        "Add String"
+    }
+
+    fn get_type(&self) -> ExecutionBlockType {
+        ExecutionBlockType::Static
+    }
+
+    fn get_inputs(&self) -> &'static [ConnectionType] {
+        &[ConnectionType::String, ConnectionType::String]
+    }
+
+    fn get_outputs(&self) -> &'static [ConnectionType] {
+        &[ConnectionType::String]
+    }
+
+    fn intern_execute(&self, input: Vec<Value>) -> Result<Vec<Value>> {
+        let value = format!(
+            "{}{}",
+            input
+                .get(0)
+                .ok_or("String input 1 not available")?
+                .get_string()
+                .ok_or("Value is not a String")?,
+            input
+                .get(1)
+                .ok_or("String input 2 not available")?
+                .get_string()
+                .ok_or("Value is not a String")?
+        );
+
+        let mut input = input;
+        input.clear();
+        input.push(Value::String(value));
+
         Ok(input)
     }
 }

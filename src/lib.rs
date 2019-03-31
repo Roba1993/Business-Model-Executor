@@ -45,6 +45,15 @@ pub enum Value {
     Unknown,
 }
 
+impl Value {
+    pub fn get_string(&self) -> Option<&String> {
+        match self {
+            Value::String(s) => Some(s),
+            _ => None
+        }
+    }
+}
+
 #[derive(Debug, PartialEq, Clone)]
 pub struct Register {
     blockId: u32,
@@ -248,6 +257,7 @@ impl Default for Logic {
         logic.add_block(Box::new(blocks::Start {}));
         logic.add_block(Box::new(blocks::ConsoleLog {}));
         logic.add_block(Box::new(blocks::StaticString {}));
+        logic.add_block(Box::new(blocks::AddString {}));
 
         logic
     }
