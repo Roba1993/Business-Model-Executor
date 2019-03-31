@@ -81,8 +81,8 @@ impl ExecutionBlock for StaticString {
         let mut input = input;
 
         for i in &mut input {
-            if i.nodeId == 1 {
-                i.nodeId = 2;
+            if i.nodeId == 0 {
+                i.nodeId = 1;
             }
         }
 

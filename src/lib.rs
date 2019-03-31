@@ -66,17 +66,31 @@ pub trait ExecutionBlock: std::fmt::Debug {
         &[]
     }
 
+    /*fn execute(&self, input: Vec<crate::Register>) -> Result<Vec<crate::Register>> {
+        // loop over the inputs
+        for (i, reg) in input.iter().enumerate() {
+            match self.get_type() {
+                ExecutionBlockType::Start => {},
+                ExecutionBlockType::Static => {},
+                ExecutionBlockType::Normal => {},
+            };
+        }
+
+
+        Ok
+    }*/
+
     fn get_json(&self) -> serde_json::Value {
         let mut nodes: Vec<serde_json::Value> = vec![];
 
         // based on the node type we generate default inputs / outputs
         match self.get_type() {
             ExecutionBlockType::Start => {
-                nodes.push(serde_json::json!({ "id": 0, "io": "output", "type": "Execution" }));
+                nodes.push(serde_json::json!({ "id": 0, "io": "output", "type": "Execution", "name": "Next" }));
             }
             ExecutionBlockType::Normal => {
-                nodes.push(serde_json::json!({ "id": 0, "io": "input", "type": "Execution" }));
-                nodes.push(serde_json::json!({ "id": 1, "io": "output", "type": "Execution" }));
+                nodes.push(serde_json::json!({ "id": 0, "io": "input", "type": "Execution", "name": "Run" }));
+                nodes.push(serde_json::json!({ "id": 1, "io": "output", "type": "Execution", "name": "Next" }));
             }
             _ => {}
         };
@@ -310,7 +324,7 @@ impl Executer {
             .iter()
             .find(|&b| b.blockId == next_block_id)
             .ok_or("No Block with the given id avilable")?;
-        println!("\nblock: {:?}", block);
+        //println!("\nblock: {:?}", block);
 
         let next_node = block
             .nodes
@@ -323,7 +337,7 @@ impl Executer {
         let next_block_id = next_node
             .connectedBlockId
             .ok_or("Execution ended (No next Execution Node connected)")?;
-        println!("\nnext_block_id: {:?}", next_block_id);
+        //println!("\nnext_block_id: {:?}", next_block_id);
 
         self.execute_block(next_block_id)?;
 
@@ -337,7 +351,7 @@ impl Executer {
             .iter()
             .find(|&b| b.blockId == block_id)
             .ok_or("No Block with the given id avilable")?;
-        println!("\nblock: {:?}", block);
+        //println!("\nblock: {:?}", block);
 
         // get all input nodes for this block which are not of type execution
         let inputs = block
@@ -361,14 +375,12 @@ impl Executer {
                 let con_block_id = n.connectedBlockId.ok_or("Is always okay")?;
                 let con_node_id = n.connectedNodeId.ok_or("Is always okay")?;
                 let con_block_type_id = n.connectedBlockTypeId.ok_or("Is always okay")?;
-                println!(
+                /*println!(
                     "\ncon_block_id: {:?} con_node_id: {:?} con_block_id: {:?}",
                     con_block_id, con_node_id, con_block_type_id
-                );
+                );*/
 
                 // get the exec_block
-                //let exec_block =
-                //    get_block(con_block_type_id).ok_or("The given Block Type is not avilable")?;
                 let exec_block = self
                     .logic
                     .get_block(con_block_type_id)
@@ -382,7 +394,7 @@ impl Executer {
                     ExecutionBlockType::Static => {
                         let values = self.exec_inputs(con_block_id)?;
 
-                        println!("\nvalues: {:?} ", values);
+                        //println!("\nvalues: {:?} ", values);
 
                         results.push(
                             values
