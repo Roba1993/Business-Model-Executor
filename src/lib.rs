@@ -40,7 +40,7 @@ pub enum ConnectionType {
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 #[serde(untagged)]
-enum Value {
+pub enum Value {
     String(String),
     Unknown,
 }
@@ -56,7 +56,7 @@ pub trait ExecutionBlock: std::fmt::Debug {
     fn get_id(&self) -> u32;
     fn get_name(&self) -> &'static str;
     fn get_type(&self) -> ExecutionBlockType;
-    fn exec(&self, input: Vec<crate::Register>) -> Result<Vec<crate::Register>>;
+    fn intern_execute(&self, input: Vec<Value>) -> Result<Vec<Value>>;
 
     fn get_inputs(&self) -> &'static [ConnectionType] {
         &[]
@@ -70,7 +70,7 @@ pub trait ExecutionBlock: std::fmt::Debug {
         let inp = input.into_iter().map(|r| r.value).collect::<Vec<Value>>();
 
         // execute the block
-        //let mut output = self.exec(input)?;
+        let inp = self.intern_execute(inp)?;
 
         let out = inp
             .into_iter()
@@ -437,7 +437,7 @@ impl Executer {
             .get_block(block.blockTypeId)
             .ok_or("The given Block Type is not avilable")?;
 
-        let ret = exec_block.exec(results)?;
+        let ret = exec_block.execute(results, block_id)?;
 
         Ok(ret)
     }

@@ -1,5 +1,5 @@
 use crate::error::Result;
-use crate::{ExecutionBlock, ExecutionBlockType, ConnectionType};
+use crate::{ExecutionBlock, ExecutionBlockType, ConnectionType, Value};
 
 #[derive(Debug)]
 pub struct Start {}
@@ -16,7 +16,7 @@ impl ExecutionBlock for Start {
         ExecutionBlockType::Start
     }
 
-    fn exec(&self, input: Vec<crate::Register>) -> Result<Vec<crate::Register>> {
+    fn intern_execute(&self, input: Vec<Value>) -> Result<Vec<Value>> {
         println!("#> Start Executed");
         println!("#> {:?}", input);
 
@@ -43,7 +43,7 @@ impl ExecutionBlock for ConsoleLog {
         &[ConnectionType::String]
     }
 
-    fn exec(&self, input: Vec<crate::Register>) -> Result<Vec<crate::Register>> {
+    fn intern_execute(&self, input: Vec<Value>) -> Result<Vec<Value>> {
         println!("#> Console Log Executed");
         println!("#> {:?}", input);
 
@@ -74,19 +74,9 @@ impl ExecutionBlock for StaticString {
         &[ConnectionType::String]
     }
 
-    fn exec(&self, input: Vec<crate::Register>) -> Result<Vec<crate::Register>> {
+    fn intern_execute(&self, input: Vec<Value>) -> Result<Vec<Value>> {
         println!("#> Static String Executed");
         println!("#> {:?}", input);
-
-        let mut input = input;
-
-        for i in &mut input {
-            if i.nodeId == 0 {
-                i.nodeId = 1;
-            }
-        }
-
-        println!("#> {:?}", &input);
 
         Ok(input)
     }
