@@ -16,18 +16,11 @@ struct Block {
 struct Node {
     id: u32,
     nodeType: String,
-    connectionType: ConnectionType,
+    connectionType: String,
     value: Value,
     connectedBlockTypeId: Option<u32>,
     connectedBlockId: Option<u32>,
     connectedNodeId: Option<u32>,
-}
-
-#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
-pub enum ConnectionType {
-    Execution,
-    String,
-    Integer,
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
@@ -41,7 +34,7 @@ impl Value {
     pub fn get_string(&self) -> Option<&String> {
         match self {
             Value::String(s) => Some(s),
-            _ => None
+            _ => None,
         }
     }
 }
@@ -59,11 +52,11 @@ pub trait ExecutionBlock: std::fmt::Debug {
     fn get_type(&self) -> ExecutionBlockType;
     fn intern_execute(&self, input: Vec<Value>) -> Result<Vec<Value>>;
 
-    fn get_inputs(&self) -> &'static [ConnectionType] {
+    fn get_inputs(&self) -> &'static [&'static str] {
         &[]
     }
 
-    fn get_outputs(&self) -> &'static [ConnectionType] {
+    fn get_outputs(&self) -> &'static [&'static str] {
         &[]
     }
 
@@ -146,14 +139,36 @@ pub enum ExecutionBlockType {
 
 pub struct Logic {
     blocks: Vec<Box<ExecutionBlock>>,
-    connections: Vec<(ConnectionType, String, bool, String, String)>,
+    connections: Vec<(String, String, bool, String, String)>,
 }
 
 impl Logic {
     pub fn empty() -> Logic {
         Logic {
             blocks: vec![],
-            connections: vec![],
+            connections: vec![
+                (
+                    "Execution".to_string(),
+                    "black".to_string(),
+                    false,
+                    "".to_string(),
+                    "".to_string(),
+                ),
+                (
+                    "String".to_string(),
+                    "purple".to_string(),
+                    true,
+                    "Text".to_string(),
+                    "".to_string(),
+                ),
+                (
+                    "Integer".to_string(),
+                    "green".to_string(),
+                    true,
+                    "0".to_string(),
+                    "".to_string(),
+                ),
+            ],
         }
     }
 
@@ -174,7 +189,7 @@ impl Logic {
 
     pub fn add_connection_type(
         &mut self,
-        typ: ConnectionType,
+        typ: String,
         color: String,
         edit: bool,
         default: String,
@@ -225,27 +240,7 @@ impl Logic {
 impl Default for Logic {
     fn default() -> Self {
         let mut logic = Logic::empty();
-        logic.add_connection_type(
-            ConnectionType::Execution,
-            "black".to_string(),
-            false,
-            "".to_string(),
-            "".to_string(),
-        );
-        logic.add_connection_type(
-            ConnectionType::String,
-            "purple".to_string(),
-            true,
-            "Text".to_string(),
-            "".to_string(),
-        );
-        logic.add_connection_type(
-            ConnectionType::Integer,
-            "green".to_string(),
-            true,
-            "0".to_string(),
-            "".to_string(),
-        );
+
         logic.add_block(Box::new(blocks::Start {}));
         logic.add_block(Box::new(blocks::ConsoleLog {}));
         logic.add_block(Box::new(blocks::StaticString {}));
@@ -333,9 +328,11 @@ impl Executer {
             .ok_or("No Block with the given id avilable")?;
 
         // get the next node if available
-        if let Some(next_node) = block.nodes.iter().find(|&n| {
-            n.nodeType == "output" && n.connectionType == ConnectionType::Execution
-        }) {
+        if let Some(next_node) = block
+            .nodes
+            .iter()
+            .find(|&n| n.nodeType == "output" && n.connectionType == "Execution")
+        {
             // get the next block id if avilable
             if let Some(next_block_id) = next_node.connectedBlockId {
                 // when available, start again
@@ -359,9 +356,7 @@ impl Executer {
         let inputs = block
             .nodes
             .iter()
-            .filter(|n| {
-                n.nodeType == "input" && n.connectionType != ConnectionType::Execution
-            })
+            .filter(|n| n.nodeType == "input" && n.connectionType != "Execution")
             .collect::<Vec<&Node>>();
 
         let mut results: Vec<Register> = vec![];

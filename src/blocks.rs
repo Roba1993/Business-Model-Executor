@@ -1,5 +1,5 @@
 use crate::error::Result;
-use crate::{ConnectionType, ExecutionBlock, ExecutionBlockType, Value};
+use crate::{ExecutionBlock, ExecutionBlockType, Value};
 
 #[derive(Debug)]
 pub struct Start {}
@@ -38,8 +38,8 @@ impl ExecutionBlock for ConsoleLog {
         ExecutionBlockType::Normal
     }
 
-    fn get_inputs(&self) -> &'static [ConnectionType] {
-        &[ConnectionType::String]
+    fn get_inputs(&self) -> &'static [&'static str] {
+        &["String"]
     }
 
     fn intern_execute(&self, input: Vec<Value>) -> Result<Vec<Value>> {
@@ -75,12 +75,12 @@ impl ExecutionBlock for StaticString {
         ExecutionBlockType::Static
     }
 
-    fn get_inputs(&self) -> &'static [ConnectionType] {
-        &[ConnectionType::String]
+    fn get_inputs(&self) -> &'static [&'static str] {
+        &["String"]
     }
 
-    fn get_outputs(&self) -> &'static [ConnectionType] {
-        &[ConnectionType::String]
+    fn get_outputs(&self) -> &'static [&'static str] {
+        &["String"]
     }
 
     fn intern_execute(&self, input: Vec<Value>) -> Result<Vec<Value>> {
@@ -103,12 +103,12 @@ impl ExecutionBlock for AddString {
         ExecutionBlockType::Static
     }
 
-    fn get_inputs(&self) -> &'static [ConnectionType] {
-        &[ConnectionType::String, ConnectionType::String]
+    fn get_inputs(&self) -> &'static [&'static str] {
+        &["String", "String"]
     }
 
-    fn get_outputs(&self) -> &'static [ConnectionType] {
-        &[ConnectionType::String]
+    fn get_outputs(&self) -> &'static [&'static str] {
+        &["String"]
     }
 
     fn intern_execute(&self, input: Vec<Value>) -> Result<Vec<Value>> {
