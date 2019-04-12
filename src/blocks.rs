@@ -16,7 +16,7 @@ ExecutionBlock!(
 ExecutionBlock!(
     id: 2,
     name: ConsolePrint,
-    typ: Static,
+    typ: Normal,
     path: crate,
 
     fn execute(inp: String) -> () {

@@ -59,13 +59,14 @@ pub fn ExecutionBlock(item: TokenStream) -> TokenStream {
         }
     }
 
-    println!("id: {}", id);
+    // debug printout
+    /*println!("id: {}", id);
     println!("name: {}", name);
     println!("description: {}", description);
     println!("path: {}", path);
     println!("inputs: {:?}", inputs);
     println!("outputs: {:?}", outputs);
-    println!("code: {:?}", code);
+    println!("code: {:?}", code);*/
 
     let mut inp_str = String::from("");
     for s in &inputs {
