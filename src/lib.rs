@@ -326,6 +326,8 @@ impl Executer {
         // - Check if all connections used in blocks exist
         // - Check if all connections use in blocks are valid
 
+        println!("{:?}", self.code);
+
         self.code_ok = true;
         Ok(())
     }
