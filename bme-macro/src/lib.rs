@@ -25,7 +25,6 @@ pub fn ExecutionBlock(item: TokenStream) -> TokenStream {
                 break;
             }
             Some(token) => {
-                println!("{:?}", token);
                 let attr = get_ident(&token).expect("No ident given").to_string();
 
                 match attr.as_str() {
