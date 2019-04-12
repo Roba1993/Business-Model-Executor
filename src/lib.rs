@@ -93,6 +93,20 @@ impl<'de> serde::de::Visitor<'de> for ValueVisitor {
     {
         Ok(Value::from(value))
     }
+
+    fn visit_unit<E>(self) -> std::result::Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        Ok(Value::Unknown)
+    }
+
+    fn visit_none<E>(self) -> std::result::Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        Ok(Value::Unknown)
+    }
 }
 
 impl<'de> serde::Deserialize<'de> for Value {
