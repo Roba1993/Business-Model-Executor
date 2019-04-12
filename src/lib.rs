@@ -30,7 +30,7 @@ struct Node {
     connected_node_id: Option<u32>,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+#[derive(Serialize, Debug, PartialEq, Clone)]
 #[serde(untagged)]
 pub enum Value {
     String(String),
@@ -51,6 +51,56 @@ impl Value {
             Value::Integer(i) => Some(i.clone()),
             _ => None,
         }
+    }
+}
+
+impl From<String> for Value {
+    fn from(item: String) -> Self {
+        if let Ok(number) = item.parse::<i64>() {
+            return Value::Integer(number)
+        }
+
+        Value::String(item)
+    }
+}
+
+pub struct ValueVisitor;
+
+impl<'de> serde::de::Visitor<'de> for ValueVisitor {
+    type Value = Value;
+
+    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+        formatter.write_str("an value of type: String, i64")
+    }
+
+    fn visit_i64<E>(self, value: i64) -> std::result::Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        Ok(Value::Integer(value))
+    }
+
+    fn visit_str<E>(self, value: &str) -> std::result::Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        Ok(Value::from(value.to_string()))
+    }
+
+    fn visit_string<E>(self, value: String) -> std::result::Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        Ok(Value::from(value))
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for Value {
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Value, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        deserializer.deserialize_any(ValueVisitor)
     }
 }
 
