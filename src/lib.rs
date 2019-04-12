@@ -158,7 +158,7 @@ impl Logic {
                     "".to_string(),
                 ),
                 (
-                    "Integer".to_string(),
+                    "i64".to_string(),
                     "green".to_string(),
                     true,
                     "0".to_string(),
