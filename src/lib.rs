@@ -39,16 +39,16 @@ pub enum Value {
 }
 
 impl Value {
-    pub fn get_string(&self) -> Option<&String> {
+    pub fn get_string(&self) -> Option<String> {
         match self {
-            Value::String(s) => Some(s),
+            Value::String(s) => Some(s.clone()),
             _ => None,
         }
     }
 
-    pub fn get_integer(&self) -> Option<&i64> {
+    pub fn get_integer(&self) -> Option<i64> {
         match self {
-            Value::Integer(i) => Some(i),
+            Value::Integer(i) => Some(i.clone()),
             _ => None,
         }
     }
@@ -65,7 +65,7 @@ pub trait ExecutionBlock: std::fmt::Debug {
     fn get_id(&self) -> u32;
     fn get_name(&self) -> &'static str;
     fn get_type(&self) -> ExecutionBlockType;
-    fn intern_execute(&self, input: Vec<Value>) -> Result<Vec<Value>>;
+    fn execute(&self, input: Vec<Register>, block_id: u32) -> Result<Vec<Register>>;
 
     fn get_inputs(&self) -> &'static [&'static str] {
         &[]
@@ -73,25 +73,6 @@ pub trait ExecutionBlock: std::fmt::Debug {
 
     fn get_outputs(&self) -> &'static [&'static str] {
         &[]
-    }
-
-    fn execute(&self, input: Vec<crate::Register>, block_id: u32) -> Result<Vec<crate::Register>> {
-        let inp = input.into_iter().map(|r| r.value).collect::<Vec<Value>>();
-
-        // execute the block
-        let inp = self.intern_execute(inp)?;
-
-        let out = inp
-            .into_iter()
-            .enumerate()
-            .map(|(i, v)| Register {
-                block_id: block_id,
-                node_id: ((i as u32) * 2) + 3,
-                value: v,
-            })
-            .collect::<Vec<Register>>();
-
-        Ok(out)
     }
 
     fn get_json(&self) -> serde_json::Value {
@@ -257,7 +238,7 @@ impl Default for Logic {
         let mut logic = Logic::empty();
 
         logic.add_block(Box::new(blocks::Start {}));
-        logic.add_block(Box::new(blocks::ConsoleLog {}));
+        logic.add_block(Box::new(blocks::ConsolePrint{}));
         logic.add_block(Box::new(blocks::StaticString {}));
         logic.add_block(Box::new(blocks::AddString {}));
         logic.add_block(Box::new(blocks::AddInteger{}));

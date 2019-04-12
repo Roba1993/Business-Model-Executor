@@ -1,221 +1,70 @@
-use crate::error::Result;
-use crate::{ExecutionBlock, ExecutionBlockType, Value};
+use bme_macro::ExecutionBlock;
 
-#[derive(Debug)]
-pub struct Start {}
-impl ExecutionBlock for Start {
-    fn get_id(&self) -> u32 {
-        1
-    }
+ExecutionBlock!(
+    id: 1,
+    name: Start,
+    typ: Start,
+    path: crate,
 
-    fn get_name(&self) -> &'static str {
-        "Start"
-    }
-
-    fn get_type(&self) -> ExecutionBlockType {
-        ExecutionBlockType::Start
-    }
-
-    fn intern_execute(&self, _input: Vec<Value>) -> Result<Vec<Value>> {
+    fn execute() -> () {
         println!("#Start>");
-
-        Ok(vec![])
+        ()
     }
-}
+);
 
-#[derive(Debug)]
-pub struct ConsoleLog {}
-impl ExecutionBlock for ConsoleLog {
-    fn get_id(&self) -> u32 {
-        2
+
+ExecutionBlock!(
+    id: 2,
+    name: ConsolePrint,
+    typ: Static,
+    path: crate,
+
+    fn execute(inp: String) -> () {
+        println!("#> {}", inp);
+        ()
     }
+);
 
-    fn get_name(&self) -> &'static str {
-        "Console Log"
+ExecutionBlock!(
+    id: 3,
+    name: StaticString,
+    typ: Static,
+    path: crate,
+
+    fn execute(inp: String) -> (String) {
+        (inp)
     }
+);
 
-    fn get_type(&self) -> ExecutionBlockType {
-        ExecutionBlockType::Normal
+ExecutionBlock!(
+    id: 4,
+    name: AddString,
+    typ: Static,
+    path: crate,
+
+    fn execute(inp1: String, inp2: String) -> (String) {
+        (format!("{}{}", inp1, inp2))
     }
+);
 
-    fn get_inputs(&self) -> &'static [&'static str] {
-        &["String"]
+ExecutionBlock!(
+    id: 5,
+    name: AddInteger,
+    typ: Static,
+    path: crate,
+
+    fn execute(inp1: i64, inp2: i64) -> (i64) {
+        (inp1 + inp2)
     }
+);
 
-    fn intern_execute(&self, input: Vec<Value>) -> Result<Vec<Value>> {
-        // get the first value
-        if let Some(i) = input.get(0) {
-            // print it
-            match i {
-                Value::String(s) => println!("#> {}", s),
-                _ => println!("#> null"),
-            }
-        }
-        // if no value is available, we print a plain promt
-        else {
-            println!("#>");
-        }
+ExecutionBlock!(
+    id: 6,
+    name: IntegerToString,
+    typ: Static,
+    path: crate,
 
-        Ok(vec![])
+    fn execute(inp: i64) -> (String) {
+        (inp.to_string())
     }
-}
-
-#[derive(Debug)]
-pub struct StaticString {}
-impl ExecutionBlock for StaticString {
-    fn get_id(&self) -> u32 {
-        3
-    }
-
-    fn get_name(&self) -> &'static str {
-        "Static String"
-    }
-
-    fn get_type(&self) -> ExecutionBlockType {
-        ExecutionBlockType::Static
-    }
-
-    fn get_inputs(&self) -> &'static [&'static str] {
-        &["String"]
-    }
-
-    fn get_outputs(&self) -> &'static [&'static str] {
-        &["String"]
-    }
-
-    fn intern_execute(&self, input: Vec<Value>) -> Result<Vec<Value>> {
-        Ok(input)
-    }
-}
-
-#[derive(Debug)]
-pub struct AddString {}
-impl ExecutionBlock for AddString {
-    fn get_id(&self) -> u32 {
-        4
-    }
-
-    fn get_name(&self) -> &'static str {
-        "Add String"
-    }
-
-    fn get_type(&self) -> ExecutionBlockType {
-        ExecutionBlockType::Static
-    }
-
-    fn get_inputs(&self) -> &'static [&'static str] {
-        &["String", "String"]
-    }
-
-    fn get_outputs(&self) -> &'static [&'static str] {
-        &["String"]
-    }
-
-    fn intern_execute(&self, input: Vec<Value>) -> Result<Vec<Value>> {
-        let value = format!(
-            "{}{}",
-            input
-                .get(0)
-                .ok_or("String input 1 not available")?
-                .get_string()
-                .ok_or("Value is not a String")?,
-            input
-                .get(1)
-                .ok_or("String input 2 not available")?
-                .get_string()
-                .ok_or("Value is not a String")?
-        );
-
-        let mut input = input;
-        input.clear();
-        input.push(Value::String(value));
-
-        Ok(input)
-    }
-}
-
-#[derive(Debug)]
-pub struct AddInteger {}
-impl ExecutionBlock for AddInteger {
-    fn get_id(&self) -> u32 {
-        5
-    }
-
-    fn get_name(&self) -> &'static str {
-        "Add Integer"
-    }
-
-    fn get_type(&self) -> ExecutionBlockType {
-        ExecutionBlockType::Static
-    }
-
-    fn get_inputs(&self) -> &'static [&'static str] {
-        &["Integer", "Integer"]
-    }
-
-    fn get_outputs(&self) -> &'static [&'static str] {
-        &["Integer"]
-    }
-
-    fn intern_execute(&self, input: Vec<Value>) -> Result<Vec<Value>> {
-        let value1 = input
-            .get(0)
-            .ok_or("Integer input 1 not available")?
-            .get_integer()
-            .ok_or("Value is not a Integer")?;
-
-        let value2 = input
-            .get(1)
-            .ok_or("Integer input 2 not available")?
-            .get_integer()
-            .ok_or("Value is not a Integer")?;
-
-        let result = value1 + value2;
-
-        let mut input = input;
-        input.clear();
-        input.push(Value::Integer(result));
-
-        Ok(input)
-    }
-}
-
-#[derive(Debug)]
-pub struct IntegerToString {}
-impl ExecutionBlock for IntegerToString {
-    fn get_id(&self) -> u32 {
-        6
-    }
-
-    fn get_name(&self) -> &'static str {
-        "Integer to String"
-    }
-
-    fn get_type(&self) -> ExecutionBlockType {
-        ExecutionBlockType::Static
-    }
-
-    fn get_inputs(&self) -> &'static [&'static str] {
-        &["Integer"]
-    }
-
-    fn get_outputs(&self) -> &'static [&'static str] {
-        &["String"]
-    }
-
-    fn intern_execute(&self, input: Vec<Value>) -> Result<Vec<Value>> {
-        let number = input
-            .get(0)
-            .ok_or("Integer input 1 not available")?
-            .get_integer()
-            .ok_or("Value is not a Integer")?;
-
-        let text = number.to_string();
-
-        let mut input = input;
-        input.clear();
-        input.push(Value::String(text));
-
-        Ok(input)
-    }
-}
+);
