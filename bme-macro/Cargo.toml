@@ -1,0 +1,10 @@
+[package]
+name = "bme-macro"
+version = "0.1.0"
+authors = ["Robert Schütte <schuetterobert@gmail.com>"]
+edition = "2018"
+
+[lib]
+proc-macro = true
+
+[dependencies]

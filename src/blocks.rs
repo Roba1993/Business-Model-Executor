@@ -133,3 +133,89 @@ impl ExecutionBlock for AddString {
         Ok(input)
     }
 }
+
+#[derive(Debug)]
+pub struct AddInteger {}
+impl ExecutionBlock for AddInteger {
+    fn get_id(&self) -> u32 {
+        5
+    }
+
+    fn get_name(&self) -> &'static str {
+        "Add Integer"
+    }
+
+    fn get_type(&self) -> ExecutionBlockType {
+        ExecutionBlockType::Static
+    }
+
+    fn get_inputs(&self) -> &'static [&'static str] {
+        &["Integer", "Integer"]
+    }
+
+    fn get_outputs(&self) -> &'static [&'static str] {
+        &["Integer"]
+    }
+
+    fn intern_execute(&self, input: Vec<Value>) -> Result<Vec<Value>> {
+        let value1 = input
+            .get(0)
+            .ok_or("Integer input 1 not available")?
+            .get_integer()
+            .ok_or("Value is not a Integer")?;
+
+        let value2 = input
+            .get(1)
+            .ok_or("Integer input 2 not available")?
+            .get_integer()
+            .ok_or("Value is not a Integer")?;
+
+        let result = value1 + value2;
+
+        let mut input = input;
+        input.clear();
+        input.push(Value::Integer(result));
+
+        Ok(input)
+    }
+}
+
+#[derive(Debug)]
+pub struct IntegerToString {}
+impl ExecutionBlock for IntegerToString {
+    fn get_id(&self) -> u32 {
+        6
+    }
+
+    fn get_name(&self) -> &'static str {
+        "Integer to String"
+    }
+
+    fn get_type(&self) -> ExecutionBlockType {
+        ExecutionBlockType::Static
+    }
+
+    fn get_inputs(&self) -> &'static [&'static str] {
+        &["Integer"]
+    }
+
+    fn get_outputs(&self) -> &'static [&'static str] {
+        &["String"]
+    }
+
+    fn intern_execute(&self, input: Vec<Value>) -> Result<Vec<Value>> {
+        let number = input
+            .get(0)
+            .ok_or("Integer input 1 not available")?
+            .get_integer()
+            .ok_or("Value is not a Integer")?;
+
+        let text = number.to_string();
+
+        let mut input = input;
+        input.clear();
+        input.push(Value::String(text));
+
+        Ok(input)
+    }
+}

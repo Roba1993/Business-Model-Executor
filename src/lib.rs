@@ -34,6 +34,7 @@ struct Node {
 #[serde(untagged)]
 pub enum Value {
     String(String),
+    Integer(i64),
     Unknown,
 }
 
@@ -41,6 +42,13 @@ impl Value {
     pub fn get_string(&self) -> Option<&String> {
         match self {
             Value::String(s) => Some(s),
+            _ => None,
+        }
+    }
+
+    pub fn get_integer(&self) -> Option<&i64> {
+        match self {
+            Value::Integer(i) => Some(i),
             _ => None,
         }
     }
@@ -252,6 +260,8 @@ impl Default for Logic {
         logic.add_block(Box::new(blocks::ConsoleLog {}));
         logic.add_block(Box::new(blocks::StaticString {}));
         logic.add_block(Box::new(blocks::AddString {}));
+        logic.add_block(Box::new(blocks::AddInteger{}));
+        logic.add_block(Box::new(blocks::IntegerToString{}));
 
         logic
     }
