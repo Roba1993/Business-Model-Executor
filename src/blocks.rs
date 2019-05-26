@@ -20,7 +20,12 @@ ExecutionBlock!(
     path: crate,
 
     fn execute(inp: String) -> () {
-        println!("#> {}", inp);
+        if cfg!(target_arch = "wasm32") {
+            web_sys::console::log_1(&inp.into());
+        }
+        else {
+            println!("#> {}", inp);
+        }
         ()
     }
 );

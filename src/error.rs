@@ -1,43 +1,65 @@
-use error_chain::{
-    error_chain, error_chain_processing, impl_error_chain_kind, impl_error_chain_processed,
-    impl_extract_backtrace,
-};
+use wasm_bindgen::prelude::*;
 
-error_chain! {
-    // The type defined for this error. These are the conventional
-    // and recommended names, but they can be arbitrarily chosen.
-    //
-    // It is also possible to leave this section out entirely, or
-    // leave it empty, and these names will be used automatically.
-    types {
-        Error, ErrorKind, ResultExt, Result;
+
+#[cfg(not(target_arch = "wasm32"))]
+pub type Result<T> = std::result::Result<T, crate::error::Error>;
+
+#[cfg(target_arch = "wasm32")]
+pub type Result<T> = std::result::Result<T, JsValue>;
+
+#[wasm_bindgen]
+#[derive(Debug)]
+pub struct Error {
+    error: std::result::Result<String, Box<dyn std::error::Error>>,
+}
+
+impl Error {
+    pub fn new(error: Box<dyn std::error::Error>) -> Error {
+        Error { error: Err(error) }
+    }
+}
+
+impl std::fmt::Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match &self.error {
+            Ok(s) => write!(f, "{}", s),
+            Err(e) => e.fmt(f),
+        }
+    }
+}
+
+impl std::error::Error for Error {
+    fn description(&self) -> &str {
+        match &self.error {
+            Ok(s) => s,
+            Err(e) => e.description(),
+        }
     }
 
-    // Automatic conversions between this error chain and other
-    // error chains. In this case, it will e.g. generate an
-    // `ErrorKind` variant called `Another` which in turn contains
-    // the `other_error::ErrorKind`, with conversions from
-    // `other_error::Error`.
-    //
-    // Optionally, some attributes can be added to a variant.
-    //
-    // This section can be empty.
-    //links {
-    //    Another(other_error::Error, other_error::ErrorKind) #[cfg(unix)];
-    //}
+    fn cause(&self) -> Option<&std::error::Error> {
+        None
+    }
+}
 
-    // Automatic conversions between this error chain and other
-    // error types not defined by the `error_chain!`. These will be
-    // wrapped in a new error with, in the first case, the
-    // `ErrorKind::Fmt` variant. The description and cause will
-    // forward to the description and cause of the original error.
-    //
-    // Optionally, some attributes can be added to a variant.
-    //
-    // This section can be empty.
-    foreign_links {
-        Fmt(::std::fmt::Error);
-        Io(::std::io::Error) #[cfg(unix)];
-        Serde(::serde_json::error::Error);
+// immplement error from string
+impl From<&str> for Error {
+    fn from(err: &str) -> Self {
+        Error {
+            error: Ok(err.to_string()),
+        }
+    }
+}
+
+// immplement error for system time
+impl From<std::time::SystemTimeError> for Error {
+    fn from(err: std::time::SystemTimeError) -> Self {
+        Error::new(Box::new(err))
+    }
+}
+
+// immplement error for system time
+impl From<serde_json::Error> for Error {
+    fn from(err: serde_json::Error) -> Self {
+        Error::new(Box::new(err))
     }
 }

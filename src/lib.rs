@@ -5,6 +5,8 @@ use error::Result;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
+use wasm_bindgen::prelude::*;
+
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 struct Block {
     #[serde(alias = "blockId")]
@@ -57,7 +59,7 @@ impl Value {
 impl From<String> for Value {
     fn from(item: String) -> Self {
         if let Ok(number) = item.parse::<i64>() {
-            return Value::Integer(number)
+            return Value::Integer(number);
         }
 
         Value::String(item)
@@ -302,16 +304,17 @@ impl Default for Logic {
         let mut logic = Logic::empty();
 
         logic.add_block(Box::new(blocks::Start {}));
-        logic.add_block(Box::new(blocks::ConsolePrint{}));
+        logic.add_block(Box::new(blocks::ConsolePrint {}));
         logic.add_block(Box::new(blocks::StaticString {}));
         logic.add_block(Box::new(blocks::AddString {}));
-        logic.add_block(Box::new(blocks::AddInteger{}));
-        logic.add_block(Box::new(blocks::IntegerToString{}));
+        logic.add_block(Box::new(blocks::AddInteger {}));
+        logic.add_block(Box::new(blocks::IntegerToString {}));
 
         logic
     }
 }
 
+#[wasm_bindgen]
 pub struct Executer {
     logic: Logic,
     raw_code: String,
@@ -320,7 +323,9 @@ pub struct Executer {
     register: HashMap<(u32, u32), Value>,
 }
 
+#[wasm_bindgen]
 impl Executer {
+    #[wasm_bindgen(constructor)]
     pub fn new(code: String) -> Executer {
         Executer {
             logic: Logic::default(),
@@ -332,7 +337,7 @@ impl Executer {
     }
 
     pub fn analyze(&mut self) -> Result<()> {
-        self.code = serde_json::from_str(&self.raw_code)?;
+        self.code = serde_json::from_str(&self.raw_code).map_err(crate::error::Error::from)?;
 
         // todo
         // - Check for only 1 Block Start Type

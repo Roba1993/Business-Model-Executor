@@ -2,6 +2,7 @@ extern crate proc_macro;
 use proc_macro::TokenStream;
 
 #[proc_macro]
+#[allow(non_snake_case)]
 pub fn ExecutionBlock(item: TokenStream) -> TokenStream {
     // Optional debug printout
     /*for i in item.clone().into_iter() {
@@ -12,7 +13,6 @@ pub fn ExecutionBlock(item: TokenStream) -> TokenStream {
     let mut stream = item.into_iter();
     let mut id = String::from("");
     let mut name = String::from("");
-    let mut description = String::from("");
     let mut typ = String::from("Static");
     let mut path = String::from("bme");
     let mut inputs: Vec<(String, String)> = vec![];
@@ -33,9 +33,6 @@ pub fn ExecutionBlock(item: TokenStream) -> TokenStream {
                     }
                     "name" => {
                         name = get_name(&mut stream);
-                    }
-                    "description" => {
-                        description = get_description(&mut stream);
                     }
                     "typ" => {
                         typ = get_typ(&mut stream);
@@ -133,7 +130,7 @@ pub fn ExecutionBlock(item: TokenStream) -> TokenStream {
                 &[{out_str}]
             }}
 
-            fn execute(&self, input: Vec<{path}::Register>, block_id: u32) -> std::result::Result<Vec<{path}::Register>, {path}::error::Error> {{
+            fn execute(&self, input: Vec<{path}::Register>, block_id: u32) -> {path}::error::Result<Vec<{path}::Register>> {{
                 let _private_input = input.into_iter().map(|r| r.value).collect::<Vec<{path}::Value>>();
                 let _private_block_id = block_id;
 
@@ -198,15 +195,6 @@ fn get_id(stream: &mut proc_macro::token_stream::IntoIter) -> String {
 fn get_name(stream: &mut proc_macro::token_stream::IntoIter) -> String {
     get_punct(&stream.next().expect("No seperator found")).expect("No seperator found");
     let res = get_ident(&stream.next().expect("No name given"))
-        .expect("No name given")
-        .to_string();
-    get_punct(&stream.next().expect("No seperator found")).expect("No seperator found");
-    res
-}
-
-fn get_description(stream: &mut proc_macro::token_stream::IntoIter) -> String {
-    get_punct(&stream.next().expect("No seperator found")).expect("No seperator found");
-    let res = get_literal(&stream.next().expect("No name given"))
         .expect("No name given")
         .to_string();
     get_punct(&stream.next().expect("No seperator found")).expect("No seperator found");
