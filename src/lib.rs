@@ -102,8 +102,8 @@ impl Logic {
             blocks: vec![],
             connections: vec![
                 NodeDefinition::new("Execution", "black", false, ""),
-                NodeDefinition::new("String", "purple", false, "Text"),
-                NodeDefinition::new("i64", "green", false, "0"),
+                NodeDefinition::new("String", "purple", true, "Text"),
+                NodeDefinition::new("i64", "green", true, "0"),
             ],
         }
     }
