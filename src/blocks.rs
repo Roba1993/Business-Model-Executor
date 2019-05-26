@@ -21,7 +21,7 @@ ExecutionBlock!(
 
     fn execute(inp: String) -> () {
         if cfg!(target_arch = "wasm32") {
-            web_sys::console::log_1(&inp.into());
+            web_sys::console::log_1(&format!("#> {}", inp).into());
         }
         else {
             println!("#> {}", inp);

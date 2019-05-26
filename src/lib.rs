@@ -5,128 +5,10 @@ use error::Result;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-use wasm_bindgen::prelude::*;
-
-#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
-struct Block {
-    #[serde(alias = "blockId")]
-    block_id: u32,
-    #[serde(alias = "blockTypeId")]
-    block_type_id: u32,
-    nodes: Vec<Node>,
-}
-
-#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
-struct Node {
-    id: u32,
-    #[serde(alias = "nodeType")]
-    node_type: String,
-    #[serde(alias = "connectionType")]
-    connection_type: String,
-    value: Value,
-    #[serde(alias = "connectedBlockTypeId")]
-    connected_block_type_id: Option<u32>,
-    #[serde(alias = "connectedBlockId")]
-    connected_block_id: Option<u32>,
-    #[serde(alias = "connectedNodeId")]
-    connected_node_id: Option<u32>,
-}
-
-#[derive(Serialize, Debug, PartialEq, Clone)]
-#[serde(untagged)]
-pub enum Value {
-    String(String),
-    Integer(i64),
-    Unknown,
-}
-
-impl Value {
-    pub fn get_string(&self) -> Option<String> {
-        match self {
-            Value::String(s) => Some(s.clone()),
-            _ => None,
-        }
-    }
-
-    pub fn get_integer(&self) -> Option<i64> {
-        match self {
-            Value::Integer(i) => Some(i.clone()),
-            _ => None,
-        }
-    }
-}
-
-impl From<String> for Value {
-    fn from(item: String) -> Self {
-        if let Ok(number) = item.parse::<i64>() {
-            return Value::Integer(number);
-        }
-
-        Value::String(item)
-    }
-}
-
-pub struct ValueVisitor;
-
-impl<'de> serde::de::Visitor<'de> for ValueVisitor {
-    type Value = Value;
-
-    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-        formatter.write_str("an value of type: String, i64")
-    }
-
-    fn visit_i64<E>(self, value: i64) -> std::result::Result<Self::Value, E>
-    where
-        E: serde::de::Error,
-    {
-        Ok(Value::Integer(value))
-    }
-
-    fn visit_str<E>(self, value: &str) -> std::result::Result<Self::Value, E>
-    where
-        E: serde::de::Error,
-    {
-        Ok(Value::from(value.to_string()))
-    }
-
-    fn visit_string<E>(self, value: String) -> std::result::Result<Self::Value, E>
-    where
-        E: serde::de::Error,
-    {
-        Ok(Value::from(value))
-    }
-
-    fn visit_unit<E>(self) -> std::result::Result<Self::Value, E>
-    where
-        E: serde::de::Error,
-    {
-        Ok(Value::Unknown)
-    }
-
-    fn visit_none<E>(self) -> std::result::Result<Self::Value, E>
-    where
-        E: serde::de::Error,
-    {
-        Ok(Value::Unknown)
-    }
-}
-
-impl<'de> serde::Deserialize<'de> for Value {
-    fn deserialize<D>(deserializer: D) -> std::result::Result<Value, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        deserializer.deserialize_any(ValueVisitor)
-    }
-}
-
-#[derive(Debug, PartialEq, Clone)]
-pub struct Register {
-    block_id: u32,
-    node_id: u32,
-    value: Value,
-}
-
+/// Execution Block trait which needs to be implemented to generate
+/// a new execution block, which can be used within the rule engine.
+///
+/// There is the makro which allows the creating of blocks in a convienient way.
 pub trait ExecutionBlock: std::fmt::Debug {
     fn get_id(&self) -> u32;
     fn get_name(&self) -> &'static str;
@@ -192,6 +74,15 @@ pub trait ExecutionBlock: std::fmt::Debug {
     }
 }
 
+/// Register to store a value in relation to a block and node
+#[derive(Debug, PartialEq, Clone)]
+pub struct Register {
+    block_id: u32,
+    node_id: u32,
+    value: Value,
+}
+
+/// Enum for the different types of a Execution blocks
 #[derive(Debug, PartialEq, Clone)]
 pub enum ExecutionBlockType {
     Start,
@@ -199,9 +90,10 @@ pub enum ExecutionBlockType {
     Normal,
 }
 
+/// Logic which collects the execution blocks as well as the nodes
 pub struct Logic {
     blocks: Vec<Box<ExecutionBlock>>,
-    connections: Vec<(String, String, bool, String, String)>,
+    connections: Vec<NodeDefinition>,
 }
 
 impl Logic {
@@ -209,27 +101,9 @@ impl Logic {
         Logic {
             blocks: vec![],
             connections: vec![
-                (
-                    "Execution".to_string(),
-                    "black".to_string(),
-                    false,
-                    "".to_string(),
-                    "".to_string(),
-                ),
-                (
-                    "String".to_string(),
-                    "purple".to_string(),
-                    true,
-                    "Text".to_string(),
-                    "".to_string(),
-                ),
-                (
-                    "i64".to_string(),
-                    "green".to_string(),
-                    true,
-                    "0".to_string(),
-                    "".to_string(),
-                ),
+                NodeDefinition::new("Execution", "black", false, ""),
+                NodeDefinition::new("String", "purple", false, "Text"),
+                NodeDefinition::new("i64", "green", false, "0"),
             ],
         }
     }
@@ -249,15 +123,8 @@ impl Logic {
             .collect::<Vec<&Box<ExecutionBlock>>>()
     }
 
-    pub fn add_connection_type(
-        &mut self,
-        typ: String,
-        color: String,
-        edit: bool,
-        default: String,
-        rule: String,
-    ) {
-        self.connections.push((typ, color, edit, default, rule));
+    pub fn add_connection_type(&mut self, node: NodeDefinition) {
+        self.connections.push(node);
     }
 
     pub fn get_connection_json(&self) -> Vec<serde_json::Value> {
@@ -265,11 +132,11 @@ impl Logic {
 
         for c in &self.connections {
             cons.push(serde_json::json!({
-                "type": c.0,
-                "color": c.1,
-                "valueEdit": c.2,
-                "valueDefault": c.3,
-                "valueCheck": c.4
+                "type": c.typ,
+                "color": c.color,
+                "valueEdit": c.value_edit,
+                "valueDefault": c.value_default,
+                "valueCheck": ""
             }));
         }
 
@@ -299,6 +166,29 @@ impl Logic {
     }
 }
 
+pub struct NodeDefinition {
+    typ: String,
+    color: String,
+    value_edit: bool,
+    value_default: String,
+}
+
+impl NodeDefinition {
+    pub fn new<S: Into<String>>(
+        typ: S,
+        color: S,
+        value_edit: bool,
+        value_default: S,
+    ) -> NodeDefinition {
+        NodeDefinition {
+            typ: typ.into(),
+            color: color.into(),
+            value_edit,
+            value_default: value_default.into(),
+        }
+    }
+}
+
 impl Default for Logic {
     fn default() -> Self {
         let mut logic = Logic::empty();
@@ -314,7 +204,6 @@ impl Default for Logic {
     }
 }
 
-#[wasm_bindgen]
 pub struct Executer {
     logic: Logic,
     raw_code: String,
@@ -323,9 +212,7 @@ pub struct Executer {
     register: HashMap<(u32, u32), Value>,
 }
 
-#[wasm_bindgen]
 impl Executer {
-    #[wasm_bindgen(constructor)]
     pub fn new(code: String) -> Executer {
         Executer {
             logic: Logic::default(),
@@ -337,7 +224,7 @@ impl Executer {
     }
 
     pub fn analyze(&mut self) -> Result<()> {
-        self.code = serde_json::from_str(&self.raw_code).map_err(crate::error::Error::from)?;
+        self.code = serde_json::from_str(&self.raw_code)?;
 
         // todo
         // - Check for only 1 Block Start Type
@@ -493,5 +380,119 @@ impl Executer {
         let ret = exec_block.execute(results, block_id)?;
 
         Ok(ret)
+    }
+}
+
+/// Execution Block parsed by Serde
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+struct Block {
+    #[serde(alias = "blockId")]
+    block_id: u32,
+    #[serde(alias = "blockTypeId")]
+    block_type_id: u32,
+    nodes: Vec<Node>,
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+struct Node {
+    id: u32,
+    #[serde(alias = "nodeType")]
+    node_type: String,
+    #[serde(alias = "connectionType")]
+    connection_type: String,
+    value: Value,
+    #[serde(alias = "connectedBlockTypeId")]
+    connected_block_type_id: Option<u32>,
+    #[serde(alias = "connectedBlockId")]
+    connected_block_id: Option<u32>,
+    #[serde(alias = "connectedNodeId")]
+    connected_node_id: Option<u32>,
+}
+
+#[derive(Serialize, Debug, PartialEq, Clone)]
+#[serde(untagged)]
+pub enum Value {
+    String(String),
+    Integer(i64),
+    Unknown,
+}
+
+impl Value {
+    pub fn get_string(&self) -> Option<String> {
+        match self {
+            Value::String(s) => Some(s.clone()),
+            _ => None,
+        }
+    }
+
+    pub fn get_integer(&self) -> Option<i64> {
+        match self {
+            Value::Integer(i) => Some(i.clone()),
+            _ => None,
+        }
+    }
+}
+
+impl From<String> for Value {
+    fn from(item: String) -> Self {
+        if let Ok(number) = item.parse::<i64>() {
+            return Value::Integer(number);
+        }
+
+        Value::String(item)
+    }
+}
+
+pub struct ValueVisitor;
+
+impl<'de> serde::de::Visitor<'de> for ValueVisitor {
+    type Value = Value;
+
+    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+        formatter.write_str("an value of type: String, i64")
+    }
+
+    fn visit_i64<E>(self, value: i64) -> std::result::Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        Ok(Value::Integer(value))
+    }
+
+    fn visit_str<E>(self, value: &str) -> std::result::Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        Ok(Value::from(value.to_string()))
+    }
+
+    fn visit_string<E>(self, value: String) -> std::result::Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        Ok(Value::from(value))
+    }
+
+    fn visit_unit<E>(self) -> std::result::Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        Ok(Value::Unknown)
+    }
+
+    fn visit_none<E>(self) -> std::result::Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        Ok(Value::Unknown)
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for Value {
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Value, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        deserializer.deserialize_any(ValueVisitor)
     }
 }

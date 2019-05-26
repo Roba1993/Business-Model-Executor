@@ -1,13 +1,5 @@
-use wasm_bindgen::prelude::*;
-
-
-#[cfg(not(target_arch = "wasm32"))]
 pub type Result<T> = std::result::Result<T, crate::error::Error>;
 
-#[cfg(target_arch = "wasm32")]
-pub type Result<T> = std::result::Result<T, JsValue>;
-
-#[wasm_bindgen]
 #[derive(Debug)]
 pub struct Error {
     error: std::result::Result<String, Box<dyn std::error::Error>>,
