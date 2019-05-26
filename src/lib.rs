@@ -205,7 +205,7 @@ impl Default for Logic {
 }
 
 pub struct Executer {
-    logic: Logic,
+    pub logic: Logic,
     raw_code: String,
     code: Vec<Block>,
     code_ok: bool,
@@ -221,6 +221,10 @@ impl Executer {
             code_ok: false,
             register: HashMap::new(),
         }
+    }
+
+    pub fn set_code<S: Into<String>>(&mut self, code: S) {
+        self.raw_code = code.into();
     }
 
     pub fn analyze(&mut self) -> Result<()> {
