@@ -1,6 +1,6 @@
-use bme_macro::ExecutionBlock;
+use bme_macro::ExecutionBlockHelper;
 
-ExecutionBlock!(
+ExecutionBlockHelper!(
     id: 1,
     name: Start,
     typ: Start,
@@ -13,7 +13,7 @@ ExecutionBlock!(
 );
 
 
-ExecutionBlock!(
+ExecutionBlockHelper!(
     id: 2,
     name: ConsolePrint,
     typ: Normal,
@@ -30,7 +30,7 @@ ExecutionBlock!(
     }
 );
 
-ExecutionBlock!(
+ExecutionBlockHelper!(
     id: 3,
     name: StaticString,
     typ: Static,
@@ -41,7 +41,7 @@ ExecutionBlock!(
     }
 );
 
-ExecutionBlock!(
+ExecutionBlockHelper!(
     id: 4,
     name: AddString,
     typ: Static,
@@ -52,7 +52,7 @@ ExecutionBlock!(
     }
 );
 
-ExecutionBlock!(
+ExecutionBlockHelper!(
     id: 5,
     name: AddInteger,
     typ: Static,
@@ -63,7 +63,7 @@ ExecutionBlock!(
     }
 );
 
-ExecutionBlock!(
+ExecutionBlockHelper!(
     id: 6,
     name: IntegerToString,
     typ: Static,

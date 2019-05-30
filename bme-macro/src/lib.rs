@@ -3,7 +3,7 @@ use proc_macro::TokenStream;
 
 #[proc_macro]
 #[allow(non_snake_case)]
-pub fn ExecutionBlock(item: TokenStream) -> TokenStream {
+pub fn ExecutionBlockHelper(item: TokenStream) -> TokenStream {
     // Optional debug printout
     /*for i in item.clone().into_iter() {
         println!("{:?}", i);
