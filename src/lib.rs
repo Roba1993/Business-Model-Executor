@@ -1,5 +1,5 @@
 pub mod blocks;
-mod error;
+pub mod error;
 
 pub use bme_macro::*;
 
@@ -79,9 +79,9 @@ pub trait ExecutionBlock: std::fmt::Debug {
 /// Register to store a value in relation to a block and node
 #[derive(Debug, PartialEq, Clone)]
 pub struct Register {
-    block_id: u32,
-    node_id: u32,
-    value: Value,
+    pub block_id: u32,
+    pub node_id: u32,
+    pub value: Value,
 }
 
 /// Enum for the different types of a Execution blocks
