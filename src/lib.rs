@@ -1,7 +1,7 @@
 pub mod blocks;
 mod error;
 
-pub use bme_macro::ExecutionBlockHelper;
+pub use bme_macro::*;
 
 use error::Result;
 use serde::{Deserialize, Serialize};
