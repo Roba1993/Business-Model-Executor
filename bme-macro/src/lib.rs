@@ -74,7 +74,7 @@ pub fn ExecutionBlockHelper(item: TokenStream) -> TokenStream {
         out_str.push_str(&format!("\"{}\",", o));
     }
 
-    let mut fn_inp_str = String::from("");
+    /*let mut fn_inp_str = String::from("");
     for (i, s) in inputs.iter().enumerate() {
         fn_inp_str.push_str(&format!(
             "let {} : {} = _private_input.get({}).ok_or(\"Argument not provided\")?{}; \n",
@@ -83,9 +83,9 @@ pub fn ExecutionBlockHelper(item: TokenStream) -> TokenStream {
             i,
             get_value_typ(&s.1)
         ));
-    }
+    }*/
 
-    let mut fn_out_str = String::from("");
+    /*let mut fn_out_str = String::from("");
     if outputs.len() == 1 {
         fn_out_str.push_str(&format!(
                 "out.push({}::Register{{ block_id: _private_block_id, node_id: {}, value: {} }});",
@@ -102,7 +102,37 @@ pub fn ExecutionBlockHelper(item: TokenStream) -> TokenStream {
                 get_bme_values(s, i, &path)
             ));
         }
+    }*/
+
+    let mut fn_inp_str = String::from("");
+    for (i, s) in inputs.iter().enumerate() {
+        fn_inp_str.push_str(&format!(
+            "let {} : {} = _private_input.get({}).unwrap().as_ref().downcast_ref::<{}>().unwrap().clone(); \n",
+            s.0,
+            s.1,
+            i,
+            s.1
+        ));
     }
+
+    let mut fn_out_str = String::from("");
+    if outputs.len() == 1 {
+        fn_out_str.push_str(&format!(
+                "out.push({}::Register{{ block_id: _private_block_id, node_id: {}, value: Box::new(result) }});",
+                path,
+                3,
+            ));
+    } else {
+        for (i, s) in outputs.iter().enumerate() {
+            fn_out_str.push_str(&format!(
+                "out.push({}::Register{{ block_id: _private_block_id, node_id: {}, value: Box::new(result.{}) }});",
+                path,
+                (i * 2) + 3,
+                i
+            ));
+        }
+    }
+
 
 
 
@@ -131,7 +161,7 @@ pub fn ExecutionBlockHelper(item: TokenStream) -> TokenStream {
             }}
 
             fn execute(&self, input: Vec<{path}::Register>, block_id: u32) -> {path}::error::Result<Vec<{path}::Register>> {{
-                let _private_input = input.into_iter().map(|r| r.value).collect::<Vec<{path}::Value>>();
+                let _private_input = input.into_iter().map(|r| r.value).collect::<Vec<Box<{path}::types::ExecutionType>>>();
                 let _private_block_id = block_id;
 
                 {fn_inp_str}

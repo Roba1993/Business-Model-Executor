@@ -12,3 +12,5 @@ serde_json = "1.0"
 bme-macro = { path = "bme-macro" }
 
 web-sys = { version = "0.3.22", features = ['console'] }
+
+downcast-rs = "1.0.4"

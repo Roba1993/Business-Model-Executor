@@ -1,5 +1,6 @@
-pub mod blocks;
 pub mod error;
+pub mod types;
+pub mod blocks;
 
 pub use bme_macro::*;
 
@@ -77,11 +78,10 @@ pub trait ExecutionBlock: std::fmt::Debug {
 }
 
 /// Register to store a value in relation to a block and node
-#[derive(Debug, PartialEq, Clone)]
 pub struct Register {
     pub block_id: u32,
     pub node_id: u32,
-    pub value: Value,
+    pub value: Box<types::ExecutionType>,
 }
 
 /// Enum for the different types of a Execution blocks
@@ -95,17 +95,18 @@ pub enum ExecutionBlockType {
 /// Logic which collects the execution blocks as well as the nodes
 pub struct Logic {
     blocks: Vec<Box<ExecutionBlock>>,
-    connections: Vec<NodeDefinition>,
+    types: Vec<Box<types::ExecutionType>>,
 }
 
 impl Logic {
     pub fn empty() -> Logic {
         Logic {
             blocks: vec![],
-            connections: vec![
-                NodeDefinition::new("Execution", "black", false, ""),
-                NodeDefinition::new("String", "purple", true, "Text"),
-                NodeDefinition::new("i64", "green", true, "0"),
+            types: vec![
+                Box::new(types::Execution::new()),
+                Box::new(String::new()),
+                Box::new(0i64),
+                Box::new(0.0f64),
             ],
         }
     }
@@ -125,19 +126,32 @@ impl Logic {
             .collect::<Vec<&Box<ExecutionBlock>>>()
     }
 
-    pub fn add_connection_type(&mut self, node: NodeDefinition) {
-        self.connections.push(node);
+    pub fn add_connection_type(&mut self, typ: Box<types::ExecutionType>) {
+        self.types.push(typ);
+    }
+
+    pub fn type_from_json(
+        &self,
+        typ: String,
+        json: serde_json::Value,
+    ) -> Result<Box<types::ExecutionType>> {
+        let res = self
+            .types
+            .iter()
+            .find(|t| t.get_name() == typ)
+            .ok_or("No matching Execution Type found")?;
+        Ok(res.from_json(json))
     }
 
     pub fn get_connection_json(&self) -> Vec<serde_json::Value> {
         let mut cons = vec![];
 
-        for c in &self.connections {
+        for c in &self.types {
             cons.push(serde_json::json!({
-                "type": c.typ,
-                "color": c.color,
-                "valueEdit": c.value_edit,
-                "valueDefault": c.value_default,
+                "type": c.get_name(),
+                "color": c.get_color(),
+                "valueEdit": if c.get_edit_default() == None {false} else {true},
+                "valueDefault": if let Some(s) = c.get_edit_default() {s} else {""},
                 "valueCheck": ""
             }));
         }
@@ -168,29 +182,6 @@ impl Logic {
     }
 }
 
-pub struct NodeDefinition {
-    typ: String,
-    color: String,
-    value_edit: bool,
-    value_default: String,
-}
-
-impl NodeDefinition {
-    pub fn new<S: Into<String>>(
-        typ: S,
-        color: S,
-        value_edit: bool,
-        value_default: S,
-    ) -> NodeDefinition {
-        NodeDefinition {
-            typ: typ.into(),
-            color: color.into(),
-            value_edit,
-            value_default: value_default.into(),
-        }
-    }
-}
-
 impl Default for Logic {
     fn default() -> Self {
         let mut logic = Logic::empty();
@@ -211,7 +202,7 @@ pub struct Executer {
     raw_code: String,
     code: Vec<Block>,
     code_ok: bool,
-    register: HashMap<(u32, u32), Value>,
+    register: HashMap<(u32, u32), Box<types::ExecutionType>>,
 }
 
 impl Executer {
@@ -363,17 +354,22 @@ impl Executer {
                         results.push(Register {
                             block_id: con_block_id,
                             node_id: con_node_id,
-                            value: value.clone(),
+                            value: value.duplicate(),
                         });
                     }
                 };
 
             // when no other block is connected
             } else {
+                // convert the json value to a execution type value
+                let value = self
+                    .logic
+                    .type_from_json(n.connection_type.clone(), n.value.clone())?;
+
                 results.push(Register {
                     block_id: block.block_id,
                     node_id: n.id,
-                    value: n.value.clone(),
+                    value,
                 });
             }
         }
@@ -406,99 +402,11 @@ struct Node {
     node_type: String,
     #[serde(alias = "connectionType")]
     connection_type: String,
-    value: Value,
+    value: serde_json::Value,
     #[serde(alias = "connectedBlockTypeId")]
     connected_block_type_id: Option<u32>,
     #[serde(alias = "connectedBlockId")]
     connected_block_id: Option<u32>,
     #[serde(alias = "connectedNodeId")]
     connected_node_id: Option<u32>,
-}
-
-#[derive(Serialize, Debug, PartialEq, Clone)]
-#[serde(untagged)]
-pub enum Value {
-    String(String),
-    Integer(i64),
-    Unknown,
-}
-
-impl Value {
-    pub fn get_string(&self) -> Option<String> {
-        match self {
-            Value::String(s) => Some(s.clone()),
-            _ => None,
-        }
-    }
-
-    pub fn get_integer(&self) -> Option<i64> {
-        match self {
-            Value::Integer(i) => Some(i.clone()),
-            _ => None,
-        }
-    }
-}
-
-impl From<String> for Value {
-    fn from(item: String) -> Self {
-        if let Ok(number) = item.parse::<i64>() {
-            return Value::Integer(number);
-        }
-
-        Value::String(item)
-    }
-}
-
-pub struct ValueVisitor;
-
-impl<'de> serde::de::Visitor<'de> for ValueVisitor {
-    type Value = Value;
-
-    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-        formatter.write_str("an value of type: String, i64")
-    }
-
-    fn visit_i64<E>(self, value: i64) -> std::result::Result<Self::Value, E>
-    where
-        E: serde::de::Error,
-    {
-        Ok(Value::Integer(value))
-    }
-
-    fn visit_str<E>(self, value: &str) -> std::result::Result<Self::Value, E>
-    where
-        E: serde::de::Error,
-    {
-        Ok(Value::from(value.to_string()))
-    }
-
-    fn visit_string<E>(self, value: String) -> std::result::Result<Self::Value, E>
-    where
-        E: serde::de::Error,
-    {
-        Ok(Value::from(value))
-    }
-
-    fn visit_unit<E>(self) -> std::result::Result<Self::Value, E>
-    where
-        E: serde::de::Error,
-    {
-        Ok(Value::Unknown)
-    }
-
-    fn visit_none<E>(self) -> std::result::Result<Self::Value, E>
-    where
-        E: serde::de::Error,
-    {
-        Ok(Value::Unknown)
-    }
-}
-
-impl<'de> serde::Deserialize<'de> for Value {
-    fn deserialize<D>(deserializer: D) -> std::result::Result<Value, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        deserializer.deserialize_any(ValueVisitor)
-    }
 }
