@@ -246,7 +246,15 @@ impl Executer {
                 .insert((start_block.block_id, i as u32 + 1), v);
         }
 
-        self.execute_block(start_block.block_id)?;
+        if self.execute_block(start_block.block_id).is_err() {
+            let out = format!("Register: {:?}", self.register);
+
+            if cfg!(target_arch = "wasm32") {
+                web_sys::console::log_1(&out.into());
+            } else {
+                println!("#> {}", out);
+            }
+        }
 
         Ok(())
     }
