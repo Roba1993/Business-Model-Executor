@@ -337,7 +337,8 @@ impl Executer {
                 // based upon the block type we have different executions
                 match exec_block.get_type() {
                     ExecutionBlockType::Start => {
-                        unimplemented!("Can't handle Start block outputs");
+                        //unimplemented!("Can't handle Start block outputs");
+                        // do nothing start block outputs are already set
                     }
                     ExecutionBlockType::Static => {
                         let values = self.exec_inputs(con_block_id)?;
