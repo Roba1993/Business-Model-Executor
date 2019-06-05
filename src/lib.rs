@@ -336,18 +336,6 @@ impl Executer {
 
                 // based upon the block type we have different executions
                 match exec_block.get_type() {
-                    ExecutionBlockType::Start => {
-                        let value = self
-                            .register
-                            .get(&(con_block_id, con_node_id))
-                            .ok_or("Value not avilable in register")?;
-
-                        results.push(Register {
-                            block_id: con_block_id,
-                            node_id: con_node_id,
-                            value: value.duplicate(),
-                        });
-                    }
                     ExecutionBlockType::Static => {
                         let values = self.exec_inputs(con_block_id)?;
 
@@ -358,7 +346,7 @@ impl Executer {
                                 .ok_or("No value available")?,
                         );
                     }
-                    ExecutionBlockType::Normal => {
+                    ExecutionBlockType::Normal | ExecutionBlockType::Start => {
                         let value = self
                             .register
                             .get(&(con_block_id, con_node_id))
@@ -391,6 +379,12 @@ impl Executer {
             .logic
             .get_block(block.block_type_id)
             .ok_or("The given Block Type is not avilable")?;
+
+        // Start blocks don't get executed, to not override the values
+        // pushed inside the register by the start of the execution
+        if exec_block.get_type() == ExecutionBlockType::Start {
+            return Ok(vec![]);
+        }
 
         let ret = exec_block.execute(results, block_id)?;
 
