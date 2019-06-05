@@ -242,8 +242,10 @@ impl Executer {
         let start_block = self.find_start_block()?;
 
         for (i, v) in inputs.into_iter().enumerate() {
+            let i = ((i * 2) + 3) as u32;
+
             self.register
-                .insert((start_block.block_id, i as u32 + 3), v);
+                .insert((start_block.block_id, i), v);
         }
 
         // execute and on error debug register
