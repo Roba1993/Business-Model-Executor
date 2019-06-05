@@ -239,11 +239,11 @@ impl Executer {
         }
 
         self.register.clear();
-
         let start_block = self.find_start_block()?;
 
         for (i, v) in inputs.into_iter().enumerate() {
-            self.register.insert((start_block.block_id, i as u32 + 1), v);
+            self.register
+                .insert((start_block.block_id, i as u32 + 1), v);
         }
 
         self.execute_block(start_block.block_id)?;
@@ -337,8 +337,16 @@ impl Executer {
                 // based upon the block type we have different executions
                 match exec_block.get_type() {
                     ExecutionBlockType::Start => {
-                        //unimplemented!("Can't handle Start block outputs");
-                        // do nothing start block outputs are already set
+                        let value = self
+                            .register
+                            .get(&(con_block_id, con_node_id))
+                            .ok_or("Value not avilable in register")?;
+
+                        results.push(Register {
+                            block_id: con_block_id,
+                            node_id: con_node_id,
+                            value: value.duplicate(),
+                        });
                     }
                     ExecutionBlockType::Static => {
                         let values = self.exec_inputs(con_block_id)?;
