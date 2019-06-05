@@ -243,7 +243,7 @@ impl Executer {
 
         for (i, v) in inputs.into_iter().enumerate() {
             self.register
-                .insert((start_block.block_id, i as u32 + 1), v);
+                .insert((start_block.block_id, i as u32 + 3), v);
         }
 
         // execute and on error debug register
