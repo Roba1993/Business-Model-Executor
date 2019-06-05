@@ -353,8 +353,6 @@ impl Executer {
                         );
                     }
                     ExecutionBlockType::Normal | ExecutionBlockType::Start => {
-                        log(con_node_id.to_string());
-
                         let value = self
                             .register
                             .get(&(con_block_id, con_node_id))

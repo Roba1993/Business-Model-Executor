@@ -9,7 +9,6 @@ pub fn ExecutionBlockHelper(item: TokenStream) -> TokenStream {
         println!("{:?}", i);
     }*/
 
-
     let mut stream = item.into_iter();
     let mut id = String::from("");
     let mut name = String::from("");
@@ -74,36 +73,6 @@ pub fn ExecutionBlockHelper(item: TokenStream) -> TokenStream {
         out_str.push_str(&format!("\"{}\",", o));
     }
 
-    /*let mut fn_inp_str = String::from("");
-    for (i, s) in inputs.iter().enumerate() {
-        fn_inp_str.push_str(&format!(
-            "let {} : {} = _private_input.get({}).ok_or(\"Argument not provided\")?{}; \n",
-            s.0,
-            s.1,
-            i,
-            get_value_typ(&s.1)
-        ));
-    }*/
-
-    /*let mut fn_out_str = String::from("");
-    if outputs.len() == 1 {
-        fn_out_str.push_str(&format!(
-                "out.push({}::Register{{ block_id: _private_block_id, node_id: {}, value: {} }});",
-                path,
-                3,
-                get_bme_value(outputs.get(0).expect("Can't fail"), &path)
-            ));
-    } else {
-        for (i, s) in outputs.iter().enumerate() {
-            fn_out_str.push_str(&format!(
-                "out.push({}::Register{{ block_id: _private_block_id, node_id: {}, value: {} }});",
-                path,
-                (i * 2) + 3,
-                get_bme_values(s, i, &path)
-            ));
-        }
-    }*/
-
     let mut fn_inp_str = String::from("");
     for (i, s) in inputs.iter().enumerate() {
         fn_inp_str.push_str(&format!(
@@ -116,25 +85,24 @@ pub fn ExecutionBlockHelper(item: TokenStream) -> TokenStream {
     }
 
     let mut fn_out_str = String::from("");
-    if outputs.len() == 1 {
-        fn_out_str.push_str(&format!(
+    if typ != "Start" {
+        if outputs.len() == 1 {
+            fn_out_str.push_str(&format!(
                 "out.push({}::Register{{ block_id: _private_block_id, node_id: {}, value: Box::new(result) }});",
                 path,
                 3,
             ));
-    } else {
-        for (i, s) in outputs.iter().enumerate() {
-            fn_out_str.push_str(&format!(
+        } else {
+            for (i, s) in outputs.iter().enumerate() {
+                fn_out_str.push_str(&format!(
                 "out.push({}::Register{{ block_id: _private_block_id, node_id: {}, value: Box::new(result.{}) }});",
                 path,
                 (i * 2) + 3,
                 i
             ));
+            }
         }
     }
-
-
-
 
     let c = format!(r#"
         #[derive(Debug)]
@@ -333,28 +301,4 @@ fn get_code(stream: &mut proc_macro::token_stream::IntoIter) -> proc_macro::Toke
     get_group(&stream.next().expect("Function code not defined"))
         .expect("Function code not defined")
         .stream()
-}
-
-fn get_value_typ(typ: &String) -> String {
-    match typ.as_str() {
-        "String" => String::from(".get_string().ok_or(\"Value is not a String\")?"),
-        "i64" => String::from(".get_integer().ok_or(\"Value is not a Integer\")?"),
-        _ => panic!(format!("get_value_typ: Only String & i64 parameters are supported: {}", typ)),
-    }
-}
-
-fn get_bme_values(typ: &String, value: usize, path: &String) -> String {
-    match typ.as_str() {
-        "String" => format!("{}::Value::String(result.{})", path, value),
-        "i64" => format!("{}::Value::Integer(result.{})", path, value),
-        _ => panic!(format!("get_bme_value: Only String & i64 parameters are supported: {}", typ)),
-    }
-}
-
-fn get_bme_value(typ: &String, path: &String) -> String {
-    match typ.as_str() {
-        "String" => format!("{}::Value::String(result)", path),
-        "i64" => format!("{}::Value::Integer(result)", path),
-        _ => panic!(format!("get_bme_value: Only String & i64 parameters are supported: {}", typ)),
-    }
 }
