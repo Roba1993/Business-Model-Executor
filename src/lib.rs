@@ -246,14 +246,10 @@ impl Executer {
                 .insert((start_block.block_id, i as u32 + 1), v);
         }
 
-        if self.execute_block(start_block.block_id).is_err() {
-            let out = format!("Register: {:?}", self.register);
-
-            if cfg!(target_arch = "wasm32") {
-                web_sys::console::log_1(&out.into());
-            } else {
-                println!("#> {}", out);
-            }
+        // execute and on error debug register
+        if let Err(e) = self.execute_block(start_block.block_id) {
+            log(format!("Register: {:?}", self.register));
+            return Err(e);
         }
 
         Ok(())
@@ -355,6 +351,8 @@ impl Executer {
                         );
                     }
                     ExecutionBlockType::Normal | ExecutionBlockType::Start => {
+                        log(con_node_id.to_string());
+
                         let value = self
                             .register
                             .get(&(con_block_id, con_node_id))
@@ -424,4 +422,12 @@ struct Node {
     connected_block_id: Option<u32>,
     #[serde(alias = "connectedNodeId")]
     connected_node_id: Option<u32>,
+}
+
+pub fn log(out: String) {
+    if cfg!(target_arch = "wasm32") {
+        web_sys::console::log_1(&out.into());
+    } else {
+        println!("#> {}", out);
+    }
 }
