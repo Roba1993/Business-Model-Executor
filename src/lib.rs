@@ -218,6 +218,7 @@ impl Executer {
 
     pub fn set_code<S: Into<String>>(&mut self, code: S) {
         self.raw_code = code.into();
+        self.code_ok = false;
     }
 
     pub fn analyze(&mut self) -> Result<()> {
