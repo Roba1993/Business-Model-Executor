@@ -56,7 +56,7 @@ impl ExecutionType for i64 {
         }
 
         if let Ok(s) = serde_json::from_value::<String>(json) {
-            if let Ok(f) = f64::from_str(&s) {
+            if let Ok(f) = i64::from_str(&s) {
                 return Box::new(f);
             }
         }
@@ -83,10 +83,18 @@ impl ExecutionType for f64 {
     }
 
     fn from_json(&self, json: serde_json::Value) -> Box<ExecutionType> {
-        let s = serde_json::from_value::<f64>(json);
+        use std::str::FromStr;
 
-        if let Ok(s) = s {
+        crate::log(format!("{}", json));
+
+        if let Ok(s) = serde_json::from_value::<f64>(json.clone()) {
             return Box::new(s);
+        }
+
+        if let Ok(s) = serde_json::from_value::<String>(json) {
+            if let Ok(f) = f64::from_str(&s) {
+                return Box::new(f);
+            }
         }
 
         Box::new(0.0f64)
