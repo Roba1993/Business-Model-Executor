@@ -85,8 +85,6 @@ impl ExecutionType for f64 {
     fn from_json(&self, json: serde_json::Value) -> Box<ExecutionType> {
         use std::str::FromStr;
 
-        crate::log(format!("{}", json));
-
         if let Ok(s) = serde_json::from_value::<f64>(json.clone()) {
             return Box::new(s);
         }

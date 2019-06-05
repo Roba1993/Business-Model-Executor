@@ -368,8 +368,6 @@ impl Executer {
 
             // when no other block is connected
             } else {
-                log(format!("{:?} - {:?}", n.connection_type, n.value));
-
                 // convert the json value to a execution type value
                 let value = self
                     .logic
