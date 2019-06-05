@@ -243,7 +243,7 @@ impl Executer {
         let start_block = self.find_start_block()?;
 
         for (i, v) in inputs.into_iter().enumerate() {
-            self.register.insert((start_block.block_id, i as u32), v);
+            self.register.insert((start_block.block_id, i as u32 + 1), v);
         }
 
         self.execute_block(start_block.block_id)?;
