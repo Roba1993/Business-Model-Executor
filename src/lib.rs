@@ -1,6 +1,6 @@
+pub mod blocks;
 pub mod error;
 pub mod types;
-pub mod blocks;
 
 pub use bme_macro::*;
 
@@ -233,7 +233,7 @@ impl Executer {
         Ok(())
     }
 
-    pub fn execute(&mut self) -> Result<()> {
+    pub fn execute(&mut self, inputs: Vec<Box<types::ExecutionType>>) -> Result<()> {
         if !self.code_ok {
             self.analyze()?;
         }
@@ -242,12 +242,16 @@ impl Executer {
 
         let start_block = self.find_start_block()?;
 
+        for (i, v) in inputs.into_iter().enumerate() {
+            self.register.insert((start_block.block_id, i as u32), v);
+        }
+
         self.execute_block(start_block.block_id)?;
 
         Ok(())
     }
 
-    fn find_start_block(&self) -> Result<&Block> {
+    fn find_start_block(&self) -> Result<Block> {
         let blocks = self.logic.get_blocks_by_type(ExecutionBlockType::Start);
         let start_block = blocks
             .get(0)
@@ -259,7 +263,7 @@ impl Executer {
             .find(|&b| b.block_type_id == start_block.get_id())
             .ok_or("No start Block available")?;
 
-        Ok(block)
+        Ok(block.clone())
     }
 
     fn execute_block(&mut self, next_block_id: u32) -> Result<()> {
