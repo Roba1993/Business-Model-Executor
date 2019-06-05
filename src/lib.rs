@@ -244,8 +244,7 @@ impl Executer {
         for (i, v) in inputs.into_iter().enumerate() {
             let i = ((i * 2) + 3) as u32;
 
-            self.register
-                .insert((start_block.block_id, i), v);
+            self.register.insert((start_block.block_id, i), v);
         }
 
         // execute and on error debug register
@@ -368,6 +367,8 @@ impl Executer {
 
             // when no other block is connected
             } else {
+                log(format!("{:?} - {:?}", n.connection_type, n.value));
+
                 // convert the json value to a execution type value
                 let value = self
                     .logic
