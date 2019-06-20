@@ -72,12 +72,14 @@ pub trait ExecutionBlock: std::fmt::Debug {
         serde_json::json!({
             "id": self.get_id(),
             "name": self.get_name(),
+            "typ": self.get_type(),
             "nodes": nodes,
         })
     }
 }
 
 /// Register to store a value in relation to a block and node
+#[derive(Debug)]
 pub struct Register {
     pub block_id: u32,
     pub node_id: u32,
@@ -85,7 +87,7 @@ pub struct Register {
 }
 
 /// Enum for the different types of a Execution blocks
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub enum ExecutionBlockType {
     Start,
     Static,
@@ -229,6 +231,8 @@ impl Executer {
         // - Check for only 1 Start Block
         // - Check if all connections used in blocks exist
         // - Check if all connections use in blocks are valid
+        // - Check that there is only one Execution type output per node
+        // - Check if only one input connection per node exist
 
         self.code_ok = true;
         Ok(())
@@ -295,9 +299,8 @@ impl Executer {
             .find(|&n| n.node_type == "output" && n.connection_type == "Execution")
         {
             // get the next block id if avilable
-            if let Some(next_block_id) = next_node.connected_block_id {
-                // when available, start again
-                self.execute_block(next_block_id)?;
+            if let Some(next_block_id) = next_node.connections.get(0) {
+                self.execute_block(next_block_id.end_block)?;
             }
         }
 
@@ -325,14 +328,17 @@ impl Executer {
         // handle all input nodes
         for n in inputs {
             // when another block is connected
-            if n.connected_block_id.is_some()
-                && n.connected_node_id.is_some()
-                && n.connected_block_type_id.is_some()
-            {
-                // get the other block and node id
-                let con_block_id = n.connected_block_id.ok_or("Is always okay")?;
-                let con_node_id = n.connected_node_id.ok_or("Is always okay")?;
-                let con_block_type_id = n.connected_block_type_id.ok_or("Is always okay")?;
+            if n.connections.len() == 1 {
+                let con = n
+                    .connections
+                    .get(0)
+                    .ok_or("There is no connection for the node avialble")?;
+
+                let con_block_type_id = self.code
+                    .iter()
+                    .find(|&b| b.block_id == con.start_block)
+                    .ok_or("No Block with the given id avilable")?
+                    .block_type_id;
 
                 // get the exec_block
                 let exec_block = self
@@ -343,24 +349,24 @@ impl Executer {
                 // based upon the block type we have different executions
                 match exec_block.get_type() {
                     ExecutionBlockType::Static => {
-                        let values = self.exec_inputs(con_block_id)?;
+                        let values = self.exec_inputs(con.start_block)?;
 
                         results.push(
                             values
                                 .into_iter()
-                                .find(|v| v.node_id == con_node_id)
+                                .find(|v| v.node_id == con.end_node)
                                 .ok_or("No value available")?,
                         );
                     }
                     ExecutionBlockType::Normal | ExecutionBlockType::Start => {
                         let value = self
                             .register
-                            .get(&(con_block_id, con_node_id))
+                            .get(&(con.start_block, con.start_node))
                             .ok_or("Value not avilable in register")?;
 
                         results.push(Register {
-                            block_id: con_block_id,
-                            node_id: con_node_id,
+                            block_id: con.start_block,
+                            node_id: con.start_node,
                             value: value.duplicate(),
                         });
                     }
@@ -411,17 +417,30 @@ struct Block {
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 struct Node {
     id: u32,
-    #[serde(alias = "nodeType")]
-    node_type: String,
+
+    connections: Vec<Connection>,
+
     #[serde(alias = "connectionType")]
     connection_type: String,
+
+    #[serde(alias = "nodeType")]
+    node_type: String,
+
     value: serde_json::Value,
-    #[serde(alias = "connectedBlockTypeId")]
-    connected_block_type_id: Option<u32>,
-    #[serde(alias = "connectedBlockId")]
-    connected_block_id: Option<u32>,
-    #[serde(alias = "connectedNodeId")]
-    connected_node_id: Option<u32>,
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+struct Connection {
+    #[serde(alias = "endBlock")]
+    end_block: u32,
+    #[serde(alias = "endNode")]
+    end_node: u32,
+    #[serde(alias = "startBlock")]
+    start_block: u32,
+    #[serde(alias = "startNode")]
+    start_node: u32,
+    #[serde(alias = "type")]
+    typ: String,
 }
 
 pub fn log(out: String) {
