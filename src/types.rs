@@ -12,6 +12,10 @@ pub trait ExecutionType: downcast_rs::Downcast + std::fmt::Debug {
     fn get_edit_default(&self) -> Option<&'static str> {
         None
     }
+
+    fn get_multi_output(&self) -> bool {
+        false
+    }
 }
 downcast_rs::impl_downcast!(ExecutionType);
 
@@ -39,7 +43,11 @@ impl ExecutionType for String {
     }
 
     fn get_edit_default(&self) -> Option<&'static str> {
-        Some("")
+        Some("Text")
+    }
+
+    fn get_multi_output(&self) -> bool {
+        true
     }
 }
 
@@ -75,6 +83,10 @@ impl ExecutionType for i64 {
     fn get_edit_default(&self) -> Option<&'static str> {
         Some("0")
     }
+
+    fn get_multi_output(&self) -> bool {
+        true
+    }
 }
 
 impl ExecutionType for f64 {
@@ -108,6 +120,10 @@ impl ExecutionType for f64 {
 
     fn get_edit_default(&self) -> Option<&'static str> {
         Some("0.0")
+    }
+
+    fn get_multi_output(&self) -> bool {
+        true
     }
 }
 

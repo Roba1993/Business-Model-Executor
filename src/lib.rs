@@ -154,7 +154,8 @@ impl Logic {
                 "color": c.get_color(),
                 "valueEdit": if c.get_edit_default() == None {false} else {true},
                 "valueDefault": if let Some(s) = c.get_edit_default() {s} else {""},
-                "valueCheck": ""
+                "valueCheck": "",
+                "multiOutput": c.get_multi_output(),
             }));
         }
 
