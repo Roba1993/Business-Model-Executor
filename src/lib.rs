@@ -301,6 +301,7 @@ impl Executer {
         {
             // get the next block id if avilable
             if let Some(next_block_id) = next_node.connections.get(0) {
+                #[allow(mutable_borrow_reservation_conflict)]
                 self.execute_block(next_block_id.end_block)?;
             }
         }
@@ -355,7 +356,7 @@ impl Executer {
                         results.push(
                             values
                                 .into_iter()
-                                .find(|v| v.node_id == con.end_node)
+                                .find(|v| v.node_id == con.start_node)
                                 .ok_or("No value available")?,
                         );
                     }

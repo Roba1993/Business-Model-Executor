@@ -42,6 +42,15 @@ impl From<&str> for Error {
     }
 }
 
+// immplement error from string
+impl From<String> for Error {
+    fn from(err: String) -> Self {
+        Error {
+            error: Ok(err),
+        }
+    }
+}
+
 // immplement error for system time
 impl From<std::time::SystemTimeError> for Error {
     fn from(err: std::time::SystemTimeError) -> Self {
