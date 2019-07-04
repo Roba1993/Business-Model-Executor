@@ -1,6 +1,6 @@
-use bme_macro::ExecutionBlockHelper;
-use crate::blocks::float::Float;
 
+use crate::blocks::float::Float;
+use bme_macro::ExecutionBlockHelper;
 #[derive(Debug, PartialEq, Clone)]
 pub struct FloatVector3 {
     pub x: f64,
@@ -14,11 +14,7 @@ impl crate::types::ExecutionType for FloatVector3 {
     }
 
     fn from_json(&self, _json: serde_json::Value) -> Box<crate::types::ExecutionType> {
-        Box::new(FloatVector3 {
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-        })
+        Box::new(FloatVector3::new(0.0, 0.0, 0.0))
     }
 
     fn duplicate(&self) -> Box<crate::types::ExecutionType> {
@@ -35,6 +31,12 @@ impl crate::types::ExecutionType for FloatVector3 {
 
     fn get_multi_output(&self) -> bool {
         true
+    }
+}
+
+impl FloatVector3 {
+    pub fn new(x: Float, y: Float, z: Float) -> FloatVector3 {
+        FloatVector3 { x, y, z }
     }
 }
 

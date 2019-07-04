@@ -110,6 +110,7 @@ impl Logic {
                 Box::new(String::new()),
                 Box::new(0i64),
                 Box::new(0.0f64),
+                Box::new(crate::blocks::float_vec3::FloatVector3::new(0.0, 0.0, 0.0)),
             ],
         }
     }
