@@ -38,7 +38,7 @@ pub trait ExecutionBlock: std::fmt::Debug {
                 nodes.push(serde_json::json!({ "id": 0, "io": "input", "type": "Execution", "name": "Run" }));
                 nodes.push(serde_json::json!({ "id": 1, "io": "output", "type": "Execution", "name": "Next" }));
             }
-            ExecutionBlockType::Static => {}
+            ExecutionBlockType::Static | ExecutionBlockType::Comment => {}
         };
 
         // add the other defined input & outputs
@@ -92,6 +92,7 @@ pub enum ExecutionBlockType {
     Start,
     Static,
     Normal,
+    Comment
 }
 
 /// Logic which collects the execution blocks as well as the nodes
@@ -188,14 +189,7 @@ impl Logic {
 impl Default for Logic {
     fn default() -> Self {
         let mut logic = Logic::empty();
-
-        logic.add_block(Box::new(blocks::Start {}));
-        logic.add_block(Box::new(blocks::ConsolePrint {}));
-        logic.add_block(Box::new(blocks::StaticString {}));
-        logic.add_block(Box::new(blocks::AddString {}));
-        logic.add_block(Box::new(blocks::AddInteger {}));
-        logic.add_block(Box::new(blocks::IntegerToString {}));
-
+        blocks::add_blocks(&mut logic);
         logic
     }
 }
@@ -371,6 +365,9 @@ impl Executer {
                             node_id: con.start_node,
                             value: value.duplicate(),
                         });
+                    }
+                    ExecutionBlockType::Comment => { 
+                        // This should not happen, comments cant be executed
                     }
                 };
 
