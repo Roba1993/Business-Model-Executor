@@ -1,7 +1,7 @@
-mod integer;
-mod float;
-mod float_vec3;
-mod string;
+pub mod integer;
+pub mod float;
+pub mod float_vec3;
+pub mod string;
 
 use bme_macro::ExecutionBlockHelper;
 
